@@ -1,10 +1,34 @@
 import sqlite3
 
-def init_db(db_name="auswertung.db"):
+Spalten = [
+    'QAh',
+    'Calc_ImA',
+    'Zyklus',
+    'EcellV',
+    'freqHz',
+    'PhaseZdeg',
+    'TemperatureC',
+    'ImZOhm',
+    'ReZOhm',
+    'ReYOhm1',
+    'ImYOhm1',
+    'YOhm1',
+    'PhaseYdeg',
+    'QdischargemAh',
+    'QchargemAh',
+    'CapacitymAh',
+    'QQomAh',
+    'ImA',
+    'Times',
+    'Messung'
+]
+
+def init_db(db_name="Eis_Analyse.db"):
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS Datapoints (
+            id INTEGER PRIMARY KEY,
             QAh INT,
             Calc_ImA INT,
             Zyklus INT,
@@ -24,11 +48,13 @@ def init_db(db_name="auswertung.db"):
             QQomAh REAL,
             ImA REAL,
             Times REAL,
+            Messung Char
         )
     """)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS Bode
         (
+            id INTEGER PRIMARY KEY,
             QAh INT,
             Calc_ImA INT,
             Zyklus INT,
@@ -37,15 +63,27 @@ def init_db(db_name="auswertung.db"):
             feeq_Min REAL,
             Im_Max REAL,
             Re_Max REAL,
-            feeq_Max REAL,
+            feeq_Max REAL
         )
         """)
     conn.commit()
     conn.close()
 
-def speichere_ergebnis(dateiname, mittelwert, db_name="auswertung.db"):
+
+def df_in_sqlite(df, db_path, table_name):
+    # Verbindung zur SQLite-Datenbank
+    conn = sqlite3.connect(db_path)
+
+    # Schreibe den DataFrame in die Datenbank
+    df.to_sql(table_name, conn, if_exists='append', index=False)
+
+    # Verbindung schließen
+    conn.close()
+
+
+def save_Datapoints(werte, db_name="auswertung.db"):
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
-    cur.execute("INSERT INTO ergebnisse (dateiname, mittelwert) VALUES (?, ?)", (dateiname, mittelwert))
+    cur.execute("INSERT INTO Datapoints  VALUES (?)", (werte))
     conn.commit()
     conn.close()
