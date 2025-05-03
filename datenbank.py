@@ -1,28 +1,5 @@
 import sqlite3
 
-Spalten = [
-    'QAh',
-    'Calc_ImA',
-    'Zyklus',
-    'EcellV',
-    'freqHz',
-    'PhaseZdeg',
-    'TemperatureC',
-    'ImZOhm',
-    'ReZOhm',
-    'ReYOhm1',
-    'ImYOhm1',
-    'YOhm1',
-    'PhaseYdeg',
-    'QdischargemAh',
-    'QchargemAh',
-    'CapacitymAh',
-    'QQomAh',
-    'ImA',
-    'Times',
-    'Messung'
-]
-
 def init_db(db_name="Eis_Analyse.db"):
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
@@ -34,21 +11,20 @@ def init_db(db_name="Eis_Analyse.db"):
             Zyklus INT,
             EcellV REAL,
             freqHz REAL,
-            PhaseZdeg REAL,
             TemperatureC REAL,
-            ImZOhm REAL,
-            ReZOhm REAL,
-            ReYOhm1 REAL,
-            ImYOhm1 REAL,
-            YOhm1 REAL,
-            PhaseYdeg REAL,
-            QdischargemAh REAL,
+            ZOhm REAL,
+            PhaseZdeg REAL,
+            calc_ReZOhm REAL,
+            calc_ImZOhm REAL,      
             QchargemAh REAL,
             CapacitymAh REAL,
             QQomAh REAL,
+            EnergyWh REAL,
             ImA REAL,
-            Times REAL,
-            Messung Char
+            times REAL,
+            calc_times REAL,
+            Messung VARCHAR,
+            Typ VARCHAR
         )
     """)
     cur.execute("""
@@ -60,7 +36,7 @@ def init_db(db_name="Eis_Analyse.db"):
             Zyklus INT,
             Im_Min REAL,
             Re_Min REAL,
-            feeq_Min REAL,
+            freq_Min REAL,
             Im_Max REAL,
             Re_Max REAL,
             feeq_Max REAL
