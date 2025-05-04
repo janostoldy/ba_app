@@ -12,7 +12,7 @@ class Database:
                 id INTEGER PRIMARY KEY,
                 QAh INT,
                 Calc_ImA INT,
-                Zyklus INT,
+                Cycle INT,
                 EcellV REAL,
                 freqHz REAL,
                 TemperatureC REAL,
@@ -37,8 +37,21 @@ class Database:
         # Filtere die Spalten des DataFrames, die in der Datenbank existieren
         db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
         df = df[[col for col in df.columns if col in db_columns]]
-        # Schreibe den gefilterten DataFrame in die Datenbank
-        df.to_sql(table_name, self.conn, if_exists='append', index=False)
+
+        for _, row in df.iterrows():
+            # Überprüfe, ob ein Eintrag mit derselben Messung existiert
+            self.cur.execute(f"SELECT id FROM {table_name} WHERE Messung = ? AND freqHz = ?", (row['Messung'],row['freqHz'],))
+            existing_row = self.cur.fetchone()
+
+            if existing_row:
+                # Aktualisiere den vorhandenen Eintrag
+                update_query = f"UPDATE {table_name} SET " + ", ".join([f"{col} = ?" for col in row.index if col != 'Messung']) + " WHERE Messung = ? AND freqHz = ?"
+                self.cur.execute(update_query, (*[row[col] for col in row.index if col != 'Messung'], row['Messung'],row['freqHz']))
+            else:
+                # Füge einen neuen Eintrag hinzu
+                row.to_frame().T.to_sql(table_name, self.conn, if_exists='append', index=False)
+
+        self.conn.commit()
 
     def close(self):
         self.conn.close()

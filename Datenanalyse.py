@@ -4,7 +4,7 @@ from galvani import BioLogic
 from datenbank import Database as DB
 from config import sql_spalten, mes_spalten
 import pandas as pd
-import math
+import numpy as np
 
 def analyze_data(file_path, cycle):
     for data_name in file_path:
@@ -21,22 +21,22 @@ def analyze_data(file_path, cycle):
         eis_ImA = df.ImA[start_eis_indices - 1]
         eis_Calc_ImA = round(eis_ImA / 1250) * 1250
         start_time = df.times[start_eis_indices]
-        eis_str = [f"{cycle}/{soc}/{ima}" for soc, ima in zip(eis_soc, eis_Calc_ImA)]
+        eis_str = [f"EIS/{cycle}/{soc}/{ima}" for soc, ima in zip(eis_soc, eis_Calc_ImA)]
         eis_str = [st.replace('.', '_') for st in eis_str]
 
 
         for i, eis in enumerate(eis_values):
             # Real und Imaginärteil berechnen
-            eis_phi = eis['PhaseZdeg'].apply(math.radians)  # Konvertiere Winkel in Radiant
-            eis['calc_ReZOhm'] = eis['ZOhm'] * math.cos(eis_phi)
-            eis['calc_ImZOhm'] = eis['ZOhm'] * math.sin(eis_phi)
+            eis_phi = np.deg2rad(eis['PhaseZdeg'])
+            eis['calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
+            eis['calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values)
 
             eis['SOC'] = eis_soc.iloc[i]
             eis['Calc_ImA'] = eis_Calc_ImA.iloc[i]
             eis['Cycle'] = cycle
             eis['calc_times'] = eis['times'] - start_time.iloc[i]
             eis['Messung'] = eis_str[i]
-            eis['Type'] = 'Eis'
+            eis['Typ'] = 'Eis'
 
         # Deis Messung
         deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)]
@@ -44,7 +44,7 @@ def analyze_data(file_path, cycle):
         deis_soc = round(df.QQomAh[deis_indices - 1] / 125) * 125
         deis_ImA = df.ImA[deis_indices - 1]
         deis_Calc_ImA = round(deis_ImA / 1250) * 1250
-        deis_str = [f"{cycle}/{soc}/{ima}" for soc, ima in zip(deis_soc, deis_Calc_ImA)]
+        deis_str = [f"DEIS/{cycle}/{soc}/{ima}" for soc, ima in zip(deis_soc, deis_Calc_ImA)]
         deis_str = [st.replace('.', '_') for st in deis_str]
 
         #Anpassungen, um Daten zusammenzufügen
@@ -52,9 +52,9 @@ def analyze_data(file_path, cycle):
         deis_Calc_ImA.index = deis_Calc_ImA.index + 1
 
         # Real und Imaginärteil berechnen
-        deis_phi = deis_values['PhaseZdeg'].apply(math.radians)  # Konvertiere Winkel in Radiant
-        deis_values['calc_ReZOhm'] = deis_values['ZOhm'] * math.cos(deis_phi)
-        deis_values['calc_ImZOhm'] = deis_values['ZOhm'] * math.sin(deis_phi)
+        deis_phi = np.deg2rad(deis_values['PhaseZdeg'])  # Konvertiere Winkel in Radiant
+        deis_values['calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
+        deis_values['calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
 
         deis_values['SOC'] = deis_soc
         deis_values['Calc_ImA'] = deis_Calc_ImA
@@ -69,7 +69,7 @@ def analyze_data(file_path, cycle):
         DB.df_in_sqlite(df=deis_values, table_name='Datapoints')
 
 try:
-    DB = DB()
+    DB = DB("Eis_Analyse.db")
     print('[Info] Open Connection')
     DB.create_table()
     file_path = ['00_Test_Data/test.mpr']
