@@ -1,5 +1,48 @@
 import sqlite3
 
+class Database:
+    def __init__(self, db_name="Eis_Analyse.db"):
+        self.db_name = db_name
+        self.conn = sqlite3.connect(db_name)
+        self.cur = self.conn.cursor()
+
+    def create_table(self):
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Datapoints (
+                id INTEGER PRIMARY KEY,
+                QAh INT,
+                Calc_ImA INT,
+                Zyklus INT,
+                EcellV REAL,
+                freqHz REAL,
+                TemperatureC REAL,
+                ZOhm REAL,
+                PhaseZdeg REAL,
+                calc_ReZOhm REAL,
+                calc_ImZOhm REAL,      
+                QchargemAh REAL,
+                CapacitymAh REAL,
+                QQomAh REAL,
+                EnergyWh REAL,
+                ImA REAL,
+                times REAL,
+                calc_times REAL,
+                Messung VARCHAR,
+                Typ VARCHAR
+            )
+        """)
+        self.conn.commit()
+
+    def df_in_sqlite(self, df, table_name):
+        # Filtere die Spalten des DataFrames, die in der Datenbank existieren
+        db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
+        df = df[[col for col in df.columns if col in db_columns]]
+        # Schreibe den gefilterten DataFrame in die Datenbank
+        df.to_sql(table_name, self.conn, if_exists='append', index=False)
+
+    def close(self):
+        self.conn.close()
+
 def init_db(db_name="Eis_Analyse.db"):
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
@@ -43,17 +86,6 @@ def init_db(db_name="Eis_Analyse.db"):
         )
         """)
     conn.commit()
-    conn.close()
-
-
-def df_in_sqlite(df, db_path, table_name):
-    # Verbindung zur SQLite-Datenbank
-    conn = sqlite3.connect(db_path)
-
-    # Schreibe den DataFrame in die Datenbank
-    df.to_sql(table_name, conn, if_exists='append', index=False)
-
-    # Verbindung schließen
     conn.close()
 
 

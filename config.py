@@ -1,7 +1,7 @@
 sql_spalten = [
     'QAh',
     'Calc_ImA',
-    'Zyklus',
+    'Cycle',
     'EcellV',
     'freqHz',
     'TemperatureC',
@@ -12,13 +12,13 @@ sql_spalten = [
     'calc_ReZOhm',
     'calc_ImZOhm',
     'QchargemAh',
-    'CapacitymAh',
     'QQomAh',
     'EnergyWh',
     'ImA',
     'times',
     'calc_times',
-    'Messung'
+    'Messung',
+    'Typ'
 ]
 
 mes_spalten = {
