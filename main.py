@@ -1,6 +1,20 @@
+from datenbank import Database
+from Datenanalyse import EIS_Analyse
 
+try:
+    DB = Database("Eis_Analyse.db","Volumes/ge95his/Datenbank")
+    DA = EIS_Analyse(DB)
 
-from datenbank import init_db, speichere_ergebnis
+    print('[Info] Open Connection')
+    DB.create_table()
+    file_path = ['00_Test_Data/test.mpr']
+    cycle = 1
+    DA.analyze_data(file_path, cycle)
+    print('[Info] Done')
 
-db_path = "/Volumes/ge95his/Datenbank/Datenbank.db"
-init_db(db_path)
+finally:
+    try:
+        DB.close()
+        print('[Info] Closed Connection')
+    except Exception as e:
+        print(f'[Error] Failed to close connection: {e}')

@@ -29,43 +29,40 @@ class Database:
                 ImA REAL,
                 times REAL,
                 calc_times REAL,
-                Messung VARCHAR,
+                Datei VARCHAR,
                 Typ VARCHAR
             )
         """)
         self.conn.commit()
 
     def df_in_sqlite(self, df, table_name):
-        # Hole die Spaltennamen der Zieltabelle aus der Datenbank
+        # Prüfe Spalten der Datenbank
         db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
-
-        # Behalte nur Spalten, die in der DB-Tabelle vorhanden sind
         df = df[[col for col in df.columns if col in db_columns]]
 
-        # Optional: Leere DataFrames überspringen
         if df.empty:
             return
 
-        for _, row in df.iterrows():
-            row_dict = row.to_dict()
+        # Stelle sicher, dass 'hash' vorhanden ist (Pflicht für UPSERT)
+        if 'hash' not in df.columns:
+            raise ValueError("DataFrame muss eine 'hash'-Spalte enthalten.")
 
-            # Prüfe auf vorhandenen Eintrag anhand des Hash-Schlüssels
-            self.cur.execute(f"SELECT 1 FROM {table_name} WHERE hash = ?", (row_dict['hash'],))
-            exists = self.cur.fetchone() is not None
+        # SQLite UPSERT-Vorbereitung
+        columns = df.columns.tolist()
+        placeholders = ", ".join(["?"] * len(columns))
+        update_clause = ", ".join([f"{col}=excluded.{col}" for col in columns if col != 'hash'])
 
-            if exists:
-                # UPDATE-Anweisung für alle Spalten außer 'hash'
-                update_cols = [col for col in row_dict if col != 'hash']
-                update_set = ", ".join([f"{col} = ?" for col in update_cols])
-                update_values = [row_dict[col] for col in update_cols] + [row_dict['hash']]
+        sql = f"""
+        INSERT INTO {table_name} ({", ".join(columns)})
+        VALUES ({placeholders})
+        ON CONFLICT(hash) DO UPDATE SET {update_clause}
+        """
 
-                sql = f"UPDATE {table_name} SET {update_set} WHERE hash = ?"
-                self.cur.execute(sql, update_values)
-            else:
-                # INSERT über df.to_sql (schnell & sicher)
-                row.to_frame().T.to_sql(table_name, self.conn, if_exists='append', index=False)
+        # Daten als Liste von Tupeln vorbereiten
+        daten = [tuple(row) for row in df.to_numpy()]
 
-        # Alle Änderungen speichern
+        # Batch einfügen (deutlich schneller als einzelne Queries)
+        self.cur.executemany(sql, daten)
         self.conn.commit()
 
     def close(self):
@@ -74,30 +71,7 @@ class Database:
 def init_db(db_name="Eis_Analyse.db"):
     conn = sqlite3.connect(db_name)
     cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS Datapoints (
-            id INTEGER PRIMARY KEY,
-            QAh INT,
-            Calc_ImA INT,
-            Zyklus INT,
-            EcellV REAL,
-            freqHz REAL,
-            TemperatureC REAL,
-            ZOhm REAL,
-            PhaseZdeg REAL,
-            calc_ReZOhm REAL,
-            calc_ImZOhm REAL,      
-            QchargemAh REAL,
-            CapacitymAh REAL,
-            QQomAh REAL,
-            EnergyWh REAL,
-            ImA REAL,
-            times REAL,
-            calc_times REAL,
-            Messung VARCHAR,
-            Typ VARCHAR
-        )
-    """)
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS Bode
         (
@@ -116,10 +90,3 @@ def init_db(db_name="Eis_Analyse.db"):
     conn.commit()
     conn.close()
 
-
-def save_Datapoints(werte, db_name="auswertung.db"):
-    conn = sqlite3.connect(db_name)
-    cur = conn.cursor()
-    cur.execute("INSERT INTO Datapoints  VALUES (?)", (werte))
-    conn.commit()
-    conn.close()
