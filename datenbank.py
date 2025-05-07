@@ -33,6 +33,20 @@ class Database:
                 Typ VARCHAR
             )
         """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Niquist (
+                hash TEXT PRIMARY KEY,
+                QAh INT,
+                Calc_ImA INT,
+                Zyklus INT,
+                Im_Min REAL,
+                Re_Min REAL,
+                freq_Min REAL,
+                Im_Max REAL,
+                Re_Max REAL,
+                freq_Max REAL
+            )
+        """)
         self.conn.commit()
 
     def df_in_sqlite(self, df, table_name):
@@ -75,7 +89,7 @@ def init_db(db_name="Eis_Analyse.db"):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS Bode
         (
-            id INTEGER PRIMARY KEY,
+            hash TEXT PRIMARY KEY,
             QAh INT,
             Calc_ImA INT,
             Zyklus INT,
@@ -84,7 +98,7 @@ def init_db(db_name="Eis_Analyse.db"):
             freq_Min REAL,
             Im_Max REAL,
             Re_Max REAL,
-            feeq_Max REAL
+            freq_Max REAL
         )
         """)
     conn.commit()
