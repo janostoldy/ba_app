@@ -1,10 +1,15 @@
-from typing import Any
 
+import hashlib
 from galvani import BioLogic
 from datenbank import Database as DB
 from config import sql_spalten, mes_spalten
 import pandas as pd
 import numpy as np
+
+def create_hash(Messung, freqHz, cycle, soc, ima):
+    # Erstelle einen Hash-Wert für die Zeile
+    hash_input = f"{Messung}/{freqHz}/{cycle}/{soc}/{ima}"
+    return hashlib.sha256(hash_input.encode()).hexdigest()
 
 def analyze_data(file_path, cycle):
     for data_name in file_path:
@@ -16,36 +21,35 @@ def analyze_data(file_path, cycle):
         # Eis Messung
         start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
         end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
-        eis_values = [df.loc[start:end] for start, end in zip(start_eis_indices, end_eis_indices)]
+        eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
         eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
         eis_ImA = df.ImA[start_eis_indices - 1]
         eis_Calc_ImA = round(eis_ImA / 1250) * 1250
         start_time = df.times[start_eis_indices]
-        eis_str = [f"EIS/{cycle}/{soc}/{ima}" for soc, ima in zip(eis_soc, eis_Calc_ImA)]
-        eis_str = [st.replace('.', '_') for st in eis_str]
-
 
         for i, eis in enumerate(eis_values):
             # Real und Imaginärteil berechnen
             eis_phi = np.deg2rad(eis['PhaseZdeg'])
-            eis['calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
-            eis['calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values)
+            eis.loc[:,'calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
+            eis.loc[:,'calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values)
 
-            eis['SOC'] = eis_soc.iloc[i]
-            eis['Calc_ImA'] = eis_Calc_ImA.iloc[i]
-            eis['Cycle'] = cycle
-            eis['calc_times'] = eis['times'] - start_time.iloc[i]
-            eis['Messung'] = eis_str[i]
-            eis['Typ'] = 'Eis'
+            eis_hashes = [create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i]) for freq in eis['freqHz']]
+            eis.loc[:,'SOC'] = eis_soc.iloc[i]
+            eis.loc[:,'Calc_ImA'] = eis_Calc_ImA.iloc[i]
+            eis.loc[:,'Cycle'] = cycle
+            eis.loc[:,'calc_times'] = eis['times'] - start_time.iloc[i]
+            eis.loc[:,'hash'] = eis_hashes
+            eis.loc[:,'Typ'] = 'Eis'
+            eis.loc[:,'Datei'] = data_name
 
         # Deis Messung
-        deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)]
+        deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)].copy()
         deis_indices = deis_values.index
         deis_soc = round(df.QQomAh[deis_indices - 1] / 125) * 125
         deis_ImA = df.ImA[deis_indices - 1]
         deis_Calc_ImA = round(deis_ImA / 1250) * 1250
-        deis_str = [f"DEIS/{cycle}/{soc}/{ima}" for soc, ima in zip(deis_soc, deis_Calc_ImA)]
-        deis_str = [st.replace('.', '_') for st in deis_str]
+        deis_freq = deis_values['freqHz']
+        deis_hashes = [create_hash('DEIS', freq, cycle, soc, ima) for soc, ima, freq in zip(deis_soc, deis_Calc_ImA, deis_freq)]
 
         #Anpassungen, um Daten zusammenzufügen
         deis_soc.index = deis_soc.index + 1
@@ -53,15 +57,16 @@ def analyze_data(file_path, cycle):
 
         # Real und Imaginärteil berechnen
         deis_phi = np.deg2rad(deis_values['PhaseZdeg'])  # Konvertiere Winkel in Radiant
-        deis_values['calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
-        deis_values['calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
+        deis_values.loc[:,'calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
+        deis_values.loc[:,'calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
 
-        deis_values['SOC'] = deis_soc
-        deis_values['Calc_ImA'] = deis_Calc_ImA
-        deis_values['Cycle'] = cycle
-        deis_values['calc_times'] = 0
-        deis_values['Messung'] = deis_str
-        deis_values['Typ'] = 'Deis'
+        deis_values.loc[:,'SOC'] = deis_soc
+        deis_values.loc[:,'Calc_ImA'] = deis_Calc_ImA
+        deis_values.loc[:,'Cycle'] = cycle
+        deis_values.loc[:,'calc_times'] = 0
+        deis_values.loc[:,'hash'] = deis_hashes
+        deis_values.loc[:,'Typ'] = 'Deis'
+        deis_values.loc[:, 'Datei'] = data_name
 
         # Save Eis and Deis values to SQLite database
         for eis in eis_values:
@@ -69,7 +74,7 @@ def analyze_data(file_path, cycle):
         DB.df_in_sqlite(df=deis_values, table_name='Datapoints')
 
 try:
-    DB = DB("Eis_Analyse.db")
+    DB = DB("Eis_Analyse.db","Volumes/ge95his/Datenbank")
     print('[Info] Open Connection')
     DB.create_table()
     file_path = ['00_Test_Data/test.mpr']

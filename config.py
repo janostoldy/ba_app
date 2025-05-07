@@ -17,7 +17,7 @@ sql_spalten = [
     'ImA',
     'times',
     'calc_times',
-    'Messung',
+    'Datei',
     'Typ'
 ]
 
