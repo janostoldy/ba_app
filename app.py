@@ -8,6 +8,7 @@ from app_pages.Points import Plot_Points
 from app_pages.DB import datenbank_app
 
 # streamlit run c:/projects/ba_pipline/App.py
+# streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
 
 st.set_page_config(layout="wide", page_icon=":battery:", page_title="Analyse-Tool")
 
