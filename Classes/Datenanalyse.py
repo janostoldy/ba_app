@@ -18,7 +18,7 @@ class EIS_Analyse:
 
     def calc_niquist_data(self, eis_data,save_data):
         results = []
-        for i, eis in enumerate(eis_data):
+        for eis in eis_data:
             re = eis['calc_ReZOhm']
             im = eis['calc_ImZOhm']
             freq = eis['freqHz']
@@ -40,6 +40,7 @@ class EIS_Analyse:
                 'freq_Max': freq.iloc[maxima_indices]
             }
             results.append(temp)
+        
         niquist_df = pd.DataFrame(results)
         if save_data:
             self.DB.df_in_sqlite(df=niquist_df, table_name='Niquist')
