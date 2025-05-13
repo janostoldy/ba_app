@@ -31,6 +31,7 @@ class Database:
                 calc_times REAL,
                 Datei VARCHAR,
                 Typ VARCHAR
+                Zelle VARCHAR
             )
         """)
         self.cur.execute("""
