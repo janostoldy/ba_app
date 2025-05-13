@@ -82,26 +82,3 @@ class Database:
 
     def close(self):
         self.conn.close()
-
-def init_db(db_name="Eis_Analyse.db"):
-    conn = sqlite3.connect(db_name)
-    cur = conn.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS Bode
-        (
-            hash TEXT PRIMARY KEY,
-            QAh INT,
-            Calc_ImA INT,
-            Zyklus INT,
-            Im_Min REAL,
-            Re_Min REAL,
-            freq_Min REAL,
-            Im_Max REAL,
-            Re_Max REAL,
-            freq_Max REAL
-        )
-        """)
-    conn.commit()
-    conn.close()
-
