@@ -1,4 +1,4 @@
-
+import os
 import hashlib
 from galvani import BioLogic
 from config import sql_spalten, mes_spalten
@@ -75,8 +75,7 @@ class EIS_Analyse:
                 eis.loc[:,'calc_times'] = eis['times'] - start_time.iloc[i]
                 eis.loc[:,'hash'] = eis_hashes
                 eis.loc[:,'Typ'] = 'Eis'
-                eis.loc[:,'Datei'] = data_name
-
+                eis.loc[:,'Datei'] = os.path.basename(data_name)
             self.calc_niquist_data(eis_values,save_data)
 
             # Deis Messung
@@ -104,7 +103,7 @@ class EIS_Analyse:
             deis_values.loc[:,'calc_times'] = 0
             deis_values.loc[:,'hash'] = deis_hashes
             deis_values.loc[:,'Typ'] = 'Deis'
-            deis_values.loc[:, 'Datei'] = data_name
+            deis_values.loc[:, 'Datei'] = os.path.basename(data_name)
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)

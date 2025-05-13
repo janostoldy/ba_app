@@ -80,5 +80,16 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
+    def query(self, sql_query, params=None):
+        """
+        Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
+
+        :param sql_query: Die SQL-Abfrage als String.
+        :param params: Optional, Parameter für die Abfrage als Tuple.
+        :return: Ergebnisse der Abfrage als Liste von Tupeln.
+        """
+        self.cur.execute(sql_query, params or ())
+        return self.cur.fetchall()
+
     def close(self):
         self.conn.close()
