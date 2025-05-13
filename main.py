@@ -1,5 +1,5 @@
-from datenbank import Database
-from Datenanalyse import EIS_Analyse
+from Classes.datenbank import Database
+from Classes.datenanalyse import EIS_Analyse
 
 try:
     DB = Database("Eis_Analyse.db","Volumes/ge95his/Datenbank")
