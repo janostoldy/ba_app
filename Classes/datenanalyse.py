@@ -11,14 +11,14 @@ class EIS_Analyse:
         # Initialisiere die Datenbankverbindung
         self.DB = datenbank
 
-    def create_hash(self, Messung, freqHz, cycle, soc, ima):
+    def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
         # Erstelle einen Hash-Wert für die Zeile
-        hash_input = f"{Messung}/{freqHz}/{cycle}/{soc}/{ima}"
+        hash_input = f"{Messung}/{freqHz}/{cycle}/{soc}/{ima}/{zelle}"
         return hashlib.sha256(hash_input.encode()).hexdigest()
 
     def calc_niquist_data(self, eis_data,save_data):
         results = []
-        for i, eis in enumerate(eis_data):
+        for eis in eis_data:
             re = eis['calc_ReZOhm']
             im = eis['calc_ImZOhm']
             freq = eis['freqHz']
@@ -40,11 +40,12 @@ class EIS_Analyse:
                 'freq_Max': freq.iloc[maxima_indices]
             }
             results.append(temp)
+        
         niquist_df = pd.DataFrame(results)
         if save_data:
             self.DB.df_in_sqlite(df=niquist_df, table_name='Niquist')
 
-    def analyze_data(self, file_path, cycle, save_data=True):
+    def analyze_data(self, file_path, cycle, Zelle, save_data):
         for data_name in file_path:
             #print('Processing: ' + os.path.basename(data_name))
             mpr_file = BioLogic.MPRfile(data_name)
@@ -66,16 +67,16 @@ class EIS_Analyse:
                 eis.loc[:,'calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
                 eis.loc[:,'calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values) *-1
 
-                eis_hashes = [self.create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i]) for freq in eis['freqHz']]
+                eis_hashes = [self.create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i], Zelle) for freq in eis['freqHz']]
                 eis.loc[:,'SOC'] = eis_soc.iloc[i]
                 eis.loc[:,'Calc_ImA'] = eis_Calc_ImA.iloc[i]
                 eis.loc[:,'Cycle'] = cycle
+                eis.loc[:,'Zelle'] = Zelle
                 eis.loc[:,'calc_times'] = eis['times'] - start_time.iloc[i]
                 eis.loc[:,'hash'] = eis_hashes
                 eis.loc[:,'Typ'] = 'Eis'
                 eis.loc[:,'Datei'] = os.path.basename(data_name)
             self.calc_niquist_data(eis_values,save_data)
-
 
             # Deis Messung
             deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)].copy()
@@ -84,7 +85,7 @@ class EIS_Analyse:
             deis_ImA = df.ImA[deis_indices - 1]
             deis_Calc_ImA = round(deis_ImA / 1250) * 1250
             deis_freq = deis_values['freqHz']
-            deis_hashes = [self.create_hash('DEIS', freq, cycle, soc, ima) for soc, ima, freq in zip(deis_soc, deis_Calc_ImA, deis_freq)]
+            deis_hashes = [self.create_hash('DEIS', freq, cycle, soc, ima, Zelle) for soc, ima, freq in zip(deis_soc, deis_Calc_ImA, deis_freq)]
 
             #Anpassungen, um Daten zusammenzufügen
             deis_soc.index = deis_soc.index + 1
@@ -98,6 +99,7 @@ class EIS_Analyse:
             deis_values.loc[:,'SOC'] = deis_soc
             deis_values.loc[:,'Calc_ImA'] = deis_Calc_ImA
             deis_values.loc[:,'Cycle'] = cycle
+            deis_values.loc[:,'Zelle'] = Zelle
             deis_values.loc[:,'calc_times'] = 0
             deis_values.loc[:,'hash'] = deis_hashes
             deis_values.loc[:,'Typ'] = 'Deis'

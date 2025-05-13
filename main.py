@@ -9,7 +9,8 @@ try:
     DB.create_table()
     file_path = ['00_Test_Data/test.mpr']
     cycle = 1
-    DA.analyze_data(file_path, cycle, True)
+    Zelle = "SN0001"
+    DA.analyze_data(file_path, cycle, Zelle, True)
     print('[Info] Done')
 
 finally:

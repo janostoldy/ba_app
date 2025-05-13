@@ -1,3 +1,6 @@
 
 Eis_Analyse.db
 .env
+.venv
+
+__pycache__
