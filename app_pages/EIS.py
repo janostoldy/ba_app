@@ -3,8 +3,8 @@ import plotly.express as px
 import pandas as pd
 from Methoden.plotting_functions import extract_sort_keys
 
-def Plot_EIS(Plot_Data, con3):
-    col1, col2 = con3.columns(2)
+def Plot_EIS(Plot_Data):
+    col1, col2 = st.columns(2)
     with col1:
         st.subheader("Cycles")
         selected_cycles = []
@@ -18,17 +18,17 @@ def Plot_EIS(Plot_Data, con3):
         for soc in Plot_Data['SoCs']:
             if st.checkbox(f"Qcell: {soc} mAh", key=f"Qcell_{soc}"):
                 selected_socs.append(soc)
-    con3.divider()
+    st.divider()
     names = list(Plot_Data['Time_Plots'])
     vars = Plot_Data['Time_Plots'][names[0]]['Plot'].keys()
-    col1, col2 = con3.columns(2)
+    col1, col2 = st.columns(2)
     x_values = col1.selectbox("X-Axis", options=vars)
     x_log = col1.checkbox("X-Axis logarithmic?", key=f"x_log_{x_values}")
     y_values = col2.selectbox("Y-Axis", options=vars)
     y_log = col2.checkbox("Y-Axis logarithmic?", key=f"y_log_{y_values}")
     plot_data = pd.DataFrame()
     missing_selection = not selected_cycles or not selected_socs
-    if con3.button("Plot", type="primary", use_container_width=True, disabled=missing_selection):
+    if st.button("Plot", type="primary", use_container_width=True, disabled=missing_selection):
         sort_plots = sorted(Plot_Data['Time_Plots'], key=extract_sort_keys)
         for Plot in sort_plots:
             if Plot_Data['Time_Plots'][Plot]['Cycle'] in selected_cycles and \

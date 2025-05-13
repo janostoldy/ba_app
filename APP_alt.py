@@ -3,9 +3,9 @@ import pandas as pd
 import json
 import io
 import plotly.express as px
-from Pages.EIS import Plot_EIS
-from Pages.DEIS import Plot_DEIS
-from Pages.EIS_Points import Plot_EIS_Points
+from app_pages.EIS import Plot_EIS
+from app_pages.DEIS import Plot_DEIS
+from app_pages.Points import Plot_Points
 from Methoden.plotting_functions import Get_Colors, extract_colors_from_soc
 from Classes.Datenanalyse import EIS_Analyse
 from Classes.datenbank import Database
