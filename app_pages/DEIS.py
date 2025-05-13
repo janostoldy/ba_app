@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from Methoden.plotting_functions import extract_sort_keys
+from src.plotting_functions import extract_sort_keys
 
 def Plot_DEIS(Plot_Data):
     col1, col2, col3 = st.columns(3)

@@ -1,12 +1,10 @@
 import streamlit as st
-import pandas as pd
 import json
 import io
-import plotly.express as px
 from app_pages.EIS import Plot_EIS
 from app_pages.DEIS import Plot_DEIS
 from app_pages.Points import Plot_Points
-from Methoden.plotting_functions import Get_Colors, extract_colors_from_soc
+from src.plotting_functions import Get_Colors, extract_colors_from_soc
 from Classes.Datenanalyse import EIS_Analyse
 from Classes.datenbank import Database
 
