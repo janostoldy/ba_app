@@ -67,11 +67,9 @@ if st.session_state["authenticated"]:
         db_page = st.Page(datenbank_app, title="Datenbank", icon="📰")
         pg = st.navigation(
             {
-                "Start": [
-                    home_page,
-                    db_page
-                    ],
+                "Start": [home_page],
                 "Anwendungen": [
+                    db_page,
                     eis_page,
                     deis_page,
                     points_page,
