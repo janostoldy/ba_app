@@ -7,21 +7,16 @@ import os
 def datenbank_app():
     st.title("Datenbank")
 
-    con1 = st.container(border=True)
-    con1.header("Connect to Database")
-    db_path = con1.text_input("Insert Database-Folder", placeholder="Volumes/ge95his/Datenbank",
-                              value="Volumes/ge95his/Datenbank")
-
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
     cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
     zelle = con2.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
     folder = con2.text_input("Insert Data-Folder", value="/Volumes/ge95his/Rohdaten", placeholder="/Data")
 
-    if db_path:
-        DB = Database("Eis_Analyse.db", db_path)
-        DA = EIS_Analyse(DB)
-        datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
+    DB = st.session_state["DB"]
+
+    DA = EIS_Analyse(DB)
+    datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
 
     dis_button = False
     if folder and datei_liste:

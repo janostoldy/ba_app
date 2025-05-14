@@ -5,7 +5,10 @@ class Database:
         self.db_name = db_name
         self.db_path = db_path if db_path else "./"
         self.full_path = f"/{self.db_path.rstrip('/')}/{self.db_name}"
-        self.conn = sqlite3.connect(self.full_path)
+        self.conn = sqlite3.connect(
+            self.full_path,
+            check_same_thread=False
+        )
         self.cur = self.conn.cursor()
 
     def create_table(self):
