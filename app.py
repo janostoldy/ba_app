@@ -5,7 +5,7 @@ from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.EIS import Plot_EIS
 from app_pages.Points import Plot_Points
-from app_pages.DB import datenbank_app
+from app_pages.db import datenbank_app
 from app_pages.zelle import zelle_app
 
 # streamlit run c:/projects/ba_pipline/App.py
