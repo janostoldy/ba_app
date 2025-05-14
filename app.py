@@ -54,7 +54,7 @@ if st.session_state["authenticated"]:
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
     user = st.session_state["User"]
-    if user.role == "user": 
+    if user.role == "user":
         pg = st.navigation(
             {
                 "Start": [home_page],
