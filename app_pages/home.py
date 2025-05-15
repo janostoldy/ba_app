@@ -9,6 +9,7 @@ def home_app():
     try:
         if "DB" not in st.session_state or st.session_state["DB"] is None:
             st.session_state["DB"] = Database("Eis_Analyse.db","Volumes/ge95his/Datenbank")
+            st.session_state["DB"].create_table()
             st.success("Datenbank verbunden")
     except Exception as e:
         st.session_state["DB"] = None
@@ -23,6 +24,7 @@ def home_app():
         if con1.button("Datenbank verbinden", type="primary", use_container_width=True):
             try:
                 st.session_state["DB"] = Database("Eis_Analyse.db",db_path)
+                st.session_state["DB"].create_table()
                 con1.success("Datenbank verbunden")
             except Exception as e:
                 st.session_state["DB"] = None

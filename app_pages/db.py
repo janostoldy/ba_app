@@ -4,22 +4,23 @@ from Classes.datenbank import Database
 from Classes.datenanalyse import EIS_Analyse
 import os
 
-def datenbank_app():
-    st.title("Datenbank")
+def add_data_app():
+    st.title("Daten hinzufügen")
+    DB = st.session_state["DB"]
+    DA = EIS_Analyse(DB)
 
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
-    cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
+    alle_zellen = DB.query("SELECT DISTINCT Zelle FROM Datapoints")
     zelle = con2.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
+
+    cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
     folder = con2.text_input("Insert Data-Folder", value="/Volumes/ge95his/Rohdaten", placeholder="/Data")
 
-    DB = st.session_state["DB"]
-
-    DA = EIS_Analyse(DB)
     datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
 
     dis_button = False
-    if folder and datei_liste:
+    if folder and not datei_liste.empty:
         mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
         if mpr_files:
             gespeicherte_dateien = [row[0] for row in datei_liste]
@@ -49,7 +50,7 @@ def datenbank_app():
 
             selected_rows = edited_df[edited_df["Auswählen"]].copy()
             con2.write("Ausgewählte Zeilen:")
-            con2.write(selected_rows["Datei"], height=200)
+            con2.dataframe(selected_rows["Datei"], height=200)
 
         else:
             con2.write("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
@@ -63,3 +64,14 @@ def datenbank_app():
         df.columns = ['Datei', 'Zyklus']
         st.write("Dateien in Datenbank:")
         st.dataframe(df)
+
+def delete_data_app():
+    st.title("Daten löschen")
+
+    con1 = st.container(border=True)
+    con1.header("Data Filtern")
+    zelle = con1.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
+    cyle = con1.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
+    DB = st.session_state["DB"]
+    data = DB.query(f"SELECT * FROM Datapoints")
+    con1.dataframe(data)

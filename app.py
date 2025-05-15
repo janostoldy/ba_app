@@ -5,7 +5,7 @@ from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.EIS import Plot_EIS
 from app_pages.Points import Plot_Points
-from app_pages.db import datenbank_app
+from app_pages.db import add_data_app, delete_data_app
 from app_pages.zelle import zelle_app
 
 # streamlit run c:/projects/ba_pipline/App.py
@@ -66,13 +66,15 @@ if st.session_state["authenticated"]:
             }
         )
     elif user.role == "admin":
-        db_page = st.Page(datenbank_app, title="Datenbank", icon="📰")
+        add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
+        delete_data_page = st.Page(delete_data_app, title="Daten löschen", icon="📰")
         zelle_page = st.Page(zelle_app, title="Zelle", icon="📰")
         pg = st.navigation(
             {
                 "Start": [home_page],
                 "Daten": [
-                    db_page,
+                    add_data_page,
+                    delete_data_page,
                     zelle_page
                 ],
                 "Anwendungen": [

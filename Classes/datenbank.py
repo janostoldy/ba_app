@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 
 class Database:
     def __init__(self, db_name="Eis_Analyse.db", db_path=""):
@@ -16,6 +17,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS Datapoints (
                 hash TEXT PRIMARY KEY,
                 QAh INT,
+                SOC INT,
                 Calc_ImA INT,
                 Cycle INT,
                 EcellV REAL,
@@ -51,6 +53,13 @@ class Database:
                 freq_Max REAL
             )
         """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Zellen (
+                id INTEGER PRIMARY KEY,
+                Cycles INT,
+                QMax REAL
+            )
+        """)
         self.conn.commit()
 
     def df_in_sqlite(self, df, table_name):
@@ -83,16 +92,21 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
-    def query(self, sql_query, params=None):
+    def query(self, sql_query):
         """
         Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
 
         :param sql_query: Die SQL-Abfrage als String.
-        :param params: Optional, Parameter für die Abfrage als Tuple.
         :return: Ergebnisse der Abfrage als Liste von Tupeln.
         """
-        self.cur.execute(sql_query, params or ())
-        return self.cur.fetchall()
+        self.cur.execute(sql_query)
+        data = self.cur.fetchall()
+        try:
+            columns = [desc[0] for desc in self.cur.description]
+            df = pd.DataFrame(data, columns=columns)
+            return df
+        except Exception as e:
+            return data
 
     def close(self):
         self.conn.close()
