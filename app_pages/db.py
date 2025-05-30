@@ -54,9 +54,13 @@ def add_data_app():
             con2.dataframe(selected_rows["Datei"], height=200)
 
             if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
-                file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
-                cycle = DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=False)
-
+                try:
+                    file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
+                    with st.spinner("Analysieren...",show_time=True):
+                        cycle = DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=False)
+                        con2.success("Daten erfolgreich in Datenbank gespeichert.")
+                except Exception as e:
+                    con2.error(f"Fehler beim Analysieren: {e}")
         else:
             con2.write("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
 

@@ -62,8 +62,9 @@ class EIS_Analyse:
             st.write(df)
 
             start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
-
             end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
+            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
+                raise Exception('No EIS data found in file or wrong flags.')
             eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
             eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
             eis_ImA = df.ImA[start_eis_indices - 1]
