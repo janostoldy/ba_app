@@ -129,6 +129,44 @@ class Database:
         except Exception as e:
             return e
 
+    def update_zell(self, dic, hash):
+        """
+            Update die Werte einer Zelle in der Tabelle Zellen.
+
+            :param dic: Die zu hinzufügenden Daten als Dictonary.
+            :param hash: Hash Wert der Zelle, die geupdated wird.
+        """
+        sql = """
+        UPDATE Zellen
+        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s
+        WHERE hash = %s
+        """
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], hash)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def delete_zell(self, hash):
+        """
+            Lösche eine Zelle aus der Tabelle Zellen.
+
+            :param hash: Hash Wert der Zelle, die geupdated wird.
+        """
+        sql = """
+        DELETE FROM Zellen
+        WHERE hash = %s
+        """
+        values = (hash,)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
     def query(self, sql_query, params=None):
         """
         Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
