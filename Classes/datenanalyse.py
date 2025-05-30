@@ -13,7 +13,7 @@ class EIS_Analyse:
 
     def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
         # Erstelle einen Hash-Wert für die Zeile
-        hash_input = f"{Messung}/{freqHz}/{cycle}/{soc}/{ima}/{zelle}"
+        hash_input = f"{Messung}{freqHz}{cycle}{soc}{ima}{zelle}"
         return hashlib.sha256(hash_input.encode()).hexdigest()
 
     def calc_niquist_data(self, eis_data,save_data):

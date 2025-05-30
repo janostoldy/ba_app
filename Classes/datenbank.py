@@ -58,7 +58,7 @@ class Database:
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Zellen (
                 hash VARCHAR(255) PRIMARY KEY,
-                id INTEGER PRIMARY KEY,
+                id VARCHAR(10),
                 Cycle INT,
                 QMax REAL,
                 Info VARCHAR(255)
@@ -67,8 +67,20 @@ class Database:
         self.conn.commit()
 
     def df_in_DB(self, df, table_name):
+        """
+        Fügt einen DataFrame in die angegebene Tabelle der Datenbank ein (mit UPSERT-Logik).
+
+        - Prüft, ob die Spalten des DataFrames mit denen der Tabelle übereinstimmen.
+        - Erwartet eine Spalte 'hash' als eindeutigen Schlüssel.
+        - Nutzt Batch-Insert für Effizienz.
+        - Bei Konflikt (gleicher 'hash') werden die Werte aktualisiert.
+
+        :param df: DataFrame mit den einzufügenden Daten.
+        :param table_name: Name der Zieltabelle als String.
+        """
         # Prüfe Spalten der Datenbank
-        db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
+        self.cur.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table_name}'")
+        db_columns = [row[0] for row in self.cur.fetchall()]
         df = df[[col for col in df.columns if col in db_columns]]
 
         if df.empty:
@@ -80,13 +92,14 @@ class Database:
 
         # SQLite UPSERT-Vorbereitung
         columns = df.columns.tolist()
-        placeholders = ", ".join(["?"] * len(columns))
-        update_clause = ", ".join([f"{col}=excluded.{col}" for col in columns if col != 'hash'])
+        placeholders = ", ".join(["%s"] * len(columns))
+        update_clause = ", ".join([f"{col}=VALUES({col})" for col in columns if col != 'hash'])
 
         sql = f"""
         INSERT INTO {table_name} ({", ".join(columns)})
         VALUES ({placeholders})
-        ON CONFLICT(hash) DO UPDATE SET {update_clause}
+        DUPLICATE KEY UPDATE 
+        {update_clause}
         """
 
         # Daten als Liste von Tupeln vorbereiten
@@ -96,14 +109,35 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
-    def query(self, sql_query):
+    def insert_zell(self, dic):
+        """
+            Füge eine Dataframe zu der Tabelle Zellen hinzu
+
+            :param dic: Die zu hinzufügenden Daten als Dictonary.
+        """
+        sql = """
+        INSERT INTO Zellen (hash, id, Cycle, QMax, Info)
+        VALUES (%s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE 
+        Info = VALUES(Info)
+        """
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"])
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def query(self, sql_query, params=None):
         """
         Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
 
         :param sql_query: Die SQL-Abfrage als String.
+        :param params: Parameter für die Abfrage, optional.
         :return: Ergebnisse der Abfrage als Liste von Tupeln.
         """
-        self.cur.execute(sql_query)
+        self.cur.execute(sql_query, params)
         data = self.cur.fetchall()
         try:
             columns = [desc[0] for desc in self.cur.description]
