@@ -11,10 +11,11 @@ def add_data_app():
 
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
-    alle_zellen = DB.query("SELECT DISTINCT Zelle FROM Datapoints")
-    zelle = con2.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
-
-    cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
+    alle_zellen = DB.query("SELECT DISTINCT id FROM Zellen")
+    zelle = con2.selectbox("Zellen eingeben", alle_zellen)
+    last_cycle = DB.query(f"SELECT MAX(Cycle) FROM Zellen WHERE id = '{zelle}'")
+    last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
+    cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=last_cycle, step=1)
     folder = con2.text_input("Insert Data-Folder", value="/Volumes/ge95his/Rohdaten", placeholder="/Data")
 
     datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")

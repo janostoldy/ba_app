@@ -1,47 +1,49 @@
-import sqlite3
+import mysql.connector
 import pandas as pd
+from dotenv import load_dotenv
+import os
 
 class Database:
-    def __init__(self, db_name="Eis_Analyse.db", db_path=""):
-        self.db_name = db_name
-        self.db_path = db_path if db_path else "./"
-        self.full_path = f"/{self.db_path.rstrip('/')}/{self.db_name}"
-        self.conn = sqlite3.connect(
-            self.full_path,
-            check_same_thread=False
+    def __init__(self, db_name="Formierung"):
+        load_dotenv()
+        self.conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST") ,
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=db_name
         )
         self.cur = self.conn.cursor()
 
     def create_table(self):
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Datapoints (
-                hash TEXT PRIMARY KEY,
+                hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
                 SOC INT,
                 Calc_ImA INT,
                 Cycle INT,
-                EcellV REAL,
-                freqHz REAL,
-                TemperatureC REAL,
-                ZOhm REAL,
-                PhaseZdeg REAL,
-                calc_ReZOhm REAL,
-                calc_ImZOhm REAL,      
-                QchargemAh REAL,
-                CapacitymAh REAL,
-                QQomAh REAL,
-                EnergyWh REAL,
-                ImA REAL,
-                times REAL,
-                calc_times REAL,
-                Datei VARCHAR,
-                Typ VARCHAR
-                Zelle VARCHAR
+                EcellV DOUBLE,
+                freqHz DOUBLE,
+                TemperatureC DOUBLE,
+                ZOhm DOUBLE,
+                PhaseZdeg DOUBLE,
+                calc_ReZOhm DOUBLE,
+                calc_ImZOhm DOUBLE,      
+                QchargemAh DOUBLE,
+                CapacitymAh DOUBLE,
+                QQomAh DOUBLE,
+                EnergyWh DOUBLE,
+                ImA DOUBLE,
+                times DOUBLE,
+                calc_times DOUBLE,
+                Datei VARCHAR(255),
+                Typ VARCHAR(255),
+                Zelle VARCHAR(255)
             )
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Niquist (
-                hash TEXT PRIMARY KEY,
+                hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
                 Calc_ImA INT,
                 Zyklus INT,
@@ -55,14 +57,16 @@ class Database:
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Zellen (
+                hash VARCHAR(255) PRIMARY KEY,
                 id INTEGER PRIMARY KEY,
-                Cycles INT,
-                QMax REAL
+                Cycle INT,
+                QMax REAL,
+                Info VARCHAR(255)
             )
         """)
         self.conn.commit()
 
-    def df_in_sqlite(self, df, table_name):
+    def df_in_DB(self, df, table_name):
         # Prüfe Spalten der Datenbank
         db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
         df = df[[col for col in df.columns if col in db_columns]]
@@ -105,7 +109,7 @@ class Database:
             columns = [desc[0] for desc in self.cur.description]
             df = pd.DataFrame(data, columns=columns)
             return df
-        except Exception as e:
+        except Exception:
             return data
 
     def close(self):
