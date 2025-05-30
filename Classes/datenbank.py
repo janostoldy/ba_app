@@ -98,7 +98,7 @@ class Database:
         sql = f"""
         INSERT INTO {table_name} ({", ".join(columns)})
         VALUES ({placeholders})
-        DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE 
         {update_clause}
         """
 

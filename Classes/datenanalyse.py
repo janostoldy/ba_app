@@ -43,17 +43,26 @@ class EIS_Analyse:
         
         niquist_df = pd.DataFrame(results)
         if save_data:
-            self.DB.df_in_sqlite(df=niquist_df, table_name='Niquist')
+            self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
 
     def analyze_data(self, file_path, cycle, Zelle, save_data):
+        import streamlit as st
         for data_name in file_path:
             #print('Processing: ' + os.path.basename(data_name))
             mpr_file = BioLogic.MPRfile(data_name)
             df = pd.DataFrame(mpr_file.data)
             df = df.rename(columns=mes_spalten)
 
+            if 'ZOhm' not in df.columns:
+                cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
+                cycle = cycle + len(cycle_index)
+                continue
+
             # Eis Messung
+            st.write(df)
+
             start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
+
             end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
             eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
             eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
@@ -107,10 +116,9 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
+        return cycle
 
     def insert_data(self, eis_values, deis_values, data_name):
-        print('[Info] Insert Data from: ' + data_name)
-        # Save Eis and Deis values to SQLite database
         for eis in eis_values:
-            self.DB.df_in_sqlite(df=eis, table_name='Datapoints')
-        self.DB.df_in_sqlite(df=deis_values, table_name='Datapoints')
+            self.DB.df_in_DB(df=eis, table_name='Datapoints')
+        self.DB.df_in_DB(df=deis_values, table_name='Datapoints')

@@ -16,12 +16,12 @@ def add_data_app():
     last_cycle = DB.query(f"SELECT MAX(Cycle) FROM Zellen WHERE id = '{zelle}'")
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
     cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=last_cycle, step=1)
-    folder = con2.text_input("Insert Data-Folder", value="/Volumes/ge95his/Rohdaten", placeholder="/Data")
+    folder = con2.text_input("Insert Data-Folder", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
 
     datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
 
     dis_button = False
-    if folder and not datei_liste.empty:
+    if folder:
         mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
         if mpr_files:
             gespeicherte_dateien = [row[0] for row in datei_liste]
@@ -53,12 +53,14 @@ def add_data_app():
             con2.write("Ausgewählte Zeilen:")
             con2.dataframe(selected_rows["Datei"], height=200)
 
+            if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
+                file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
+                cycle = DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=False)
+
         else:
             con2.write("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
 
-    if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
-        file_dir = [os.path.join(folder, f) for f in nicht_gespeicherte_dateien]
-        Data = EIS_Analyse.analyze_data(file_path= mpr_files, cycle=cycle, Zelle=zelle, save_data=True)
+
 
     if 'datei_liste' in locals():
         df = pd.DataFrame(datei_liste)
