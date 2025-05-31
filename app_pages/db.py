@@ -19,7 +19,7 @@ def add_data_app():
     folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
 
     try:
-        datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
+        datei_liste = DB.query("SELECT DISTINCT Datei, Cycle, Zelle FROM Datapoints")
     except Exception as e:
         con2.error(f"Fehler beim Abrufen der Datenbank: {e}")
         datei_liste = None
@@ -76,7 +76,7 @@ def add_data_app():
 
     if 'datei_liste' in locals():
         df = pd.DataFrame(datei_liste)
-        df.columns = ['Datei', 'Zyklus']
+        df.columns = ['Datei', 'Zyklus', 'Zelle']
         st.write("Dateien in Datenbank:")
         st.dataframe(df)
 

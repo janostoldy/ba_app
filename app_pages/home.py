@@ -16,11 +16,18 @@ def home_app():
         con1.error(f"Fehler beim Verbinden mit der Datenbank: {e}")
         st.session_state["DB"] = None
 
-    if "DB" not in st.session_state or st.session_state["DB"] is None:
+    try:
+        DB = st.session_state["DB"]
+        DB.query("SELECT * FROM Datapoints")
+    except Exception as e:
+        con1 = st.container(border=True)
+        st.subheader("Datenbank verbinden")
+        st.error(e)
         if con1.button("Datenbank verbinden", type="primary", use_container_width=True):
             try:
                 st.session_state["DB"] = Database("Formierung")
                 st.session_state["DB"].create_table()
                 con1.success("Datenbank verbunden")
+                st.rerun()
             except Exception as e:
                 st.session_state["DB"] = None
