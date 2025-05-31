@@ -45,3 +45,5 @@ def Plot_EIS():
                 plot_data = pd.concat([plot_data, df_temp], ignore_index=True)
         fig = px.line(plot_data, x=x_values, y=y_values, color="Plot", title="Verläufe der EIS-Messung", log_x=x_log, log_y=y_log)
         return fig, plot_data
+    else:
+        return None, None

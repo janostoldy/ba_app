@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+
+from app_pages.analyse import analyse_app
 from src.user import User, get_known_user
 from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
@@ -7,6 +9,7 @@ from app_pages.EIS import Plot_EIS
 from app_pages.Points import Plot_Points
 from app_pages.db import add_data_app, delete_data_app
 from app_pages.zelle import zelle_app
+from app_pages.analyse import analyse_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -50,6 +53,7 @@ if st.session_state["authenticated"] is None:
 if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
+    analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
     eis_page = st.Page(Plot_EIS, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
@@ -59,6 +63,7 @@ if st.session_state["authenticated"]:
             {
                 "Start": [home_page],
                 "Anwendungen": [
+                    analyse_page,
                     eis_page,
                     deis_page,
                     points_page,
@@ -78,6 +83,7 @@ if st.session_state["authenticated"]:
                     zelle_page
                 ],
                 "Anwendungen": [
+                    analyse_page,
                     eis_page,
                     deis_page,
                     points_page,

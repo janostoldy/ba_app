@@ -15,15 +15,23 @@ def add_data_app():
     zelle = con2.selectbox("Zellen eingeben", alle_zellen)
     last_cycle = DB.query(f"SELECT MAX(Cycle) FROM Zellen WHERE id = '{zelle}'")
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
-    cycle = con2.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=last_cycle, step=1)
-    folder = con2.text_input("Insert Data-Folder", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
+    cycle = con2.number_input("Zyklus eingeben", min_value=0, max_value=1000, value=last_cycle, step=1)
+    folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
 
-    datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
+    try:
+        datei_liste = DB.query("SELECT DISTINCT Datei, Cycle FROM Datapoints")
+    except Exception as e:
+        con2.error(f"Fehler beim Abrufen der Datenbank: {e}")
+        datei_liste = None
 
     dis_button = False
-    if folder:
-        mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
-        if mpr_files:
+    if datei_liste is not None:
+        try:
+            mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
+        except Exception as e:
+            con2.error(f"Fehler beim Abrufen der Dateien im Ordner: {e}")
+            mpr_files = None
+        if mpr_files is not None:
             gespeicherte_dateien = [row[0] for row in datei_liste]
             nicht_gespeicherte_dateien = [f for f in mpr_files if f not in gespeicherte_dateien]
             nicht_gespeicherte_dateien = pd.DataFrame(
@@ -50,8 +58,6 @@ def add_data_app():
             )
 
             selected_rows = edited_df[edited_df["Auswählen"]].copy()
-            con2.write("Ausgewählte Zeilen:")
-            con2.dataframe(selected_rows["Datei"], height=200)
 
             if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
                 try:
@@ -62,7 +68,7 @@ def add_data_app():
                 except Exception as e:
                     con2.error(f"Fehler beim Analysieren: {e}")
         else:
-            con2.write("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
+            con2.error("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
 
 
 
