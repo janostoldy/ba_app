@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from Classes.datenbank import Database
+from src.plotting_df import highlight_status, status_func
 from Classes.datenanalyse import EIS_Analyse
 import os
 
@@ -27,50 +27,52 @@ def add_data_app():
     dis_button = False
     if datei_liste is not None:
         try:
-            mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
+            with st.spinner("Daten suchen...", show_time=True):
+                mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
         except Exception as e:
             con2.error(f"Fehler beim Abrufen der Dateien im Ordner: {e}")
             mpr_files = None
         if mpr_files is not None:
+            # DF mit allen Dateien und Status und gefilterten Dateien
             gespeicherte_dateien = [row[0] for row in datei_liste]
-            nicht_gespeicherte_dateien = [f for f in mpr_files if f not in gespeicherte_dateien]
-            nicht_gespeicherte_dateien = pd.DataFrame(
-                [{'Datei': f, 'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in
-                 nicht_gespeicherte_dateien]
+            import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in mpr_files])
+            import_files["Status"] = import_files["Datei"].apply(lambda f: status_func(f, gespeicherte_dateien, folder))
+            col1, col2 = con2.columns([4,1])
+            col1.write("Gefundene .mpr-Dateien")
+            filter = col2.selectbox(
+                "Status",
+                ("Neu","In Datenbank","Fehlende Daten"),
+                label_visibility="collapsed",
+                index=None,
+                placeholder="Filter wählen...",
+
             )
+            # Filter anwenden, wenn ausgewählt
+            if filter:
+                filter_files = import_files[import_files["Status"] == filter]
+            else:
+                filter_files = import_files
 
-            nicht_gespeicherte_dateien.insert(0, "Auswählen", False)
-
-            con2.write("Gefundene .mpr-Dateien, die noch nicht in der Datenbank sind:")
-            # Dateneditor mit Checkbox pro Zeile
-            edited_df = con2.data_editor(
-                nicht_gespeicherte_dateien,
-                num_rows="fixed",
-                use_container_width=True,
-                disabled=["Datei", "Größe (KB)"],
-                column_config={
-                    "Auswählen": st.column_config.CheckboxColumn(
-                        "Auswählen", help="Wählen Sie die Zeilen aus, die Sie analysieren möchten."
-                    ),
-                    "Datei": st.column_config.TextColumn("Datei"),
-                },
-                hide_index=True,
+            if "filter_files" not in st.session_state or st.session_state.filter_files.equals(filter_files) == False:
+                 st.session_state.filter_files = filter_files
+            event = con2.dataframe(
+                st.session_state.filter_files.style.applymap(highlight_status, subset=["Status"]),
+                key="data",
+                on_select="rerun",
+                selection_mode="multi-row",
             )
-
-            selected_rows = edited_df[edited_df["Auswählen"]].copy()
-
+            selected_rows = st.session_state.filter_files.iloc[event.selection.rows]
             if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
                 try:
                     file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
                     with st.spinner("Analysieren...",show_time=True):
-                        cycle = DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=False)
+                        DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                         con2.success("Daten erfolgreich in Datenbank gespeichert.")
+                        st.rerun()
                 except Exception as e:
                     con2.error(f"Fehler beim Analysieren: {e}")
         else:
             con2.error("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
-
-
 
     if 'datei_liste' in locals():
         df = pd.DataFrame(datei_liste)

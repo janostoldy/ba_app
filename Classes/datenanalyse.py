@@ -56,17 +56,28 @@ class EIS_Analyse:
             if 'ZOhm' not in df.columns:
                 cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
                 cycle = cycle + len(cycle_index)
+                qmax = max(df['QAh'])
+                hash_input = f"{Zelle}{cycle}{qmax}"
+                hash = hashlib.sha256(hash_input.encode()).hexdigest()
+                dic = {
+                    "hash": hash,
+                    "id": Zelle,
+                    "Cycle": cycle,
+                    "QMax": qmax,
+                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}"
+                }
+                self.DB.insert_zell(dic)
                 continue
 
             # Eis Messung
-            st.write(df)
-
             start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
-            start_eis_indices = df[((df['flags'] == 39) | (df['flags'] == 181)) & (df['freqHz'] > 0)].index
             end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
-            end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqHz'] > 0)].index
+            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
+                start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqHz'] > 0)].index
+                end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqHz'] > 0)].index
             if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
                 raise Exception('No EIS data found in file or wrong flags.')
+
             eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
             eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
             eis_ImA = df.ImA[start_eis_indices - 1]
@@ -90,8 +101,13 @@ class EIS_Analyse:
                 eis.loc[:,'Datei'] = os.path.basename(data_name)
             self.calc_niquist_data(eis_values,save_data)
 
+
             # Deis Messung
             deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)].copy()
+            if len(deis_values) == 0:
+                deis_values = df[((df['flags'] == 101) | (df['flags'] == 229)) & (df['freqHz'] > 0)].copy()
+            if len(deis_values) == 0:
+                raise Exception('No DEIS data found in file or wrong flags.')
             deis_indices = deis_values.index
             deis_soc = round(df.QQomAh[deis_indices - 1] / 125) * 125
             deis_ImA = df.ImA[deis_indices - 1]
@@ -119,7 +135,6 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
-        return cycle
 
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:

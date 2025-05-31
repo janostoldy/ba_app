@@ -22,9 +22,9 @@ def zelle_app():
 @st.dialog("Neue Daten einer Zelle Hinzufügen",width="large")
 def zellen_hinzufuegen():
     col1, col2, col3 = st.columns(3)
-    id = col1.text_input("Zelle ID", placeholder="SN0001", max_chars=10)
+    id = col1.text_input("Zelle ID", placeholder="SN0001", max_chars=20)
     cycle = col2.number_input("Zelle Cycle", min_value=0, max_value=1000, value=1, step=1)
-    qmax = col3.number_input("Zelle Cycle", min_value=0.0, max_value=30000.0, value=30000.0, step=0.1)
+    qmax = col3.number_input("Zelle Cycle", min_value=0.0, max_value=30000.0, value=0.0, step=0.1)
     info = st.text_area("Zelle Info", placeholder="Zelle Info",max_chars=255)
     if st.button("Daten Hinzufügen", use_container_width= True, type="primary"):
         hash_input = f"{id}{cycle}{qmax}"
@@ -41,9 +41,10 @@ def zellen_hinzufuegen():
             e = DB.insert_zell(dic)
         if e is None:
             st.success(f"Zelle {id} erfolgreich hinzugefügt")
+            st.rerun()
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
-        st.rerun()
+
 
 @st.dialog("Daten Bearbeiten",width="large")
 def zelle_edit():
@@ -55,7 +56,7 @@ def zelle_edit():
     st.write("Daten der Zelle:")
     zelle = zellen.iloc[num]
     col1, col2, col3 = st.columns(3)
-    id = col1.text_input("Zelle ID", value=zelle["id"], max_chars=10)
+    id = col1.text_input("Zelle ID", value=zelle["id"], max_chars=20)
     cycle = col2.number_input("Zelle Cycle", min_value=0, max_value=1000, value=zelle["Cycle"], step=1)
     qmax = col3.number_input("Zelle Cycle", min_value=0.0, max_value=30000.0, value=zelle["QMax"], step=0.1)
     info = st.text_area("Zelle Info", value=zelle["Info"], max_chars=255)
