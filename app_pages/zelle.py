@@ -8,7 +8,6 @@ def zelle_app():
     st.title("Zellen")
     zellen_filter()
 
-
     col1, col2 = st.columns(2)
     if col1.button("Daten oder Zelle hinzufügen", use_container_width= True, type="primary"):
         zellen_hinzufuegen()
@@ -16,7 +15,8 @@ def zelle_app():
         zelle_edit()
     st.divider()
 
-    zellen = query_zellen()
+    DB = st.session_state["DB"]
+    zellen = DB.get_zellen(st.session_state["zelle_filter"]["zellen_id"],st.session_state["zelle_filter"]["zellen_cycle"])
     st.dataframe(zellen[["id", "Cycle", "QMax", "Info"]])
 
 @st.dialog("Neue Daten einer Zelle Hinzufügen",width="large")
@@ -45,12 +45,13 @@ def zellen_hinzufuegen():
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
 
-
 @st.dialog("Daten Bearbeiten",width="large")
 def zelle_edit():
     st.write("Index der Zelle aus dem Dargestellten Dataframe:")
     DB = st.session_state["DB"]
-    zellen = query_zellen()
+    zellen_id = st.session_state["zelle_filter"]["zellen_id"]
+    zellen_cycle= st.session_state["zelle_filter"]["zellen_cycle"]
+    zellen = DB.get_zellen(zellen_id,zellen_cycle)
     num = st.number_input("Index", min_value=0, max_value=len(zellen), value=0, step=1)
 
     st.write("Daten der Zelle:")
@@ -108,21 +109,3 @@ def zellen_filter():
         "zellen_id": zellen_id,
         "zellen_cycle": zelle_cycle
     }
-
-def query_zellen():
-    DB = st.session_state["DB"]
-    zellen_id = st.session_state["zelle_filter"]["zellen_id"]
-    zelle_cycle = st.session_state["zelle_filter"]["zellen_cycle"]
-
-    sql = "SELECT * FROM Zellen WHERE 1=1"
-    params = []
-    if zellen_id is not None:
-        sql += " AND id = %s"
-        params.append(zellen_id)
-
-    if zelle_cycle is not None:
-        sql += " AND Cycle = %s"
-        params.append(zelle_cycle)
-
-    zellen = DB.query(sql, params=params)
-    return zellen

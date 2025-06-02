@@ -47,14 +47,23 @@ class EIS_Analyse:
 
     def analyze_data(self, file_path, cycle, Zelle, save_data):
         import streamlit as st
-        for data_name in file_path:
+        for data_path in file_path:
             #print('Processing: ' + os.path.basename(data_name))
-            mpr_file = BioLogic.MPRfile(data_name)
+            data_name = os.path.basename(data_path)
+            mpr_file = BioLogic.MPRfile(data_path)
             df = pd.DataFrame(mpr_file.data)
             df = df.rename(columns=mes_spalten)
 
             if 'ZOhm' not in df.columns:
-                cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
+                cycle_index = df[((df['flags'] == 55) | (df['flags'] == 183))]
+                if len(cycle_index) == 0:
+                    cycle_index = df[(df['flags'] == 33)]
+                    if len(cycle_index) != 1:
+                        cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
+
+                if len(cycle_index) == 0:
+                    self.DB.insert_file(data_name, cycle, Zelle, f"Ruhe Zyklen oder falsche Flaggen")
+                    continue
                 cycle = cycle + len(cycle_index)
                 qmax = max(df['QAh'])
                 hash_input = f"{Zelle}{cycle}{qmax}"
@@ -67,6 +76,7 @@ class EIS_Analyse:
                     "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}"
                 }
                 self.DB.insert_zell(dic)
+                self.DB.insert_file(data_name, cycle, Zelle, f"{len(cycle_index)} Aeging Zyklen")
                 continue
 
             # Eis Messung
@@ -135,6 +145,8 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
+                self.DB.insert_file(data_name, cycle, Zelle, "Eis Messung")
+
 
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:

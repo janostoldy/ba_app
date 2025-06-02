@@ -58,10 +58,18 @@ class Database:
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Zellen (
                 hash VARCHAR(255) PRIMARY KEY,
-                id VARCHAR(10),
+                id VARCHAR(20),
                 Cycle INT,
                 QMax REAL,
                 Info VARCHAR(255)
+            )
+        """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Files (
+                name  VARCHAR(255) PRIMARY KEY,
+                name  VARCHAR(50),
+                Datum Date,
+                Info  VARCHAR(255)
             )
         """)
         self.conn.commit()
@@ -108,6 +116,43 @@ class Database:
         # Batch einfügen (deutlich schneller als einzelne Queries)
         self.cur.executemany(sql, daten)
         self.conn.commit()
+
+    def insert_file(self, file, cycle, Info="", Zelle=""):
+        sql = """
+            INSERT INTO Files (name, Datum, Cycle, Zelle, Info)
+            VALUES (%s, CURRENT_DATE(), %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            Info = VALUES(Info), Datum = CURRENT_DATE(), Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
+        """
+        values = (file, cycle, Zelle, Info)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def delete_file(self, file):
+        sql = """
+            DELETE FROM Files 
+            WHERE name = (%s)
+        """
+        values = (file,)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def get_all_files(self):
+        return self.query("SELECT name, Cycle, Zelle FROM Files")
+
+    def get_all_zells(self):
+        return self.query("SELECT DISTINCT id FROM Zellen")
+
+    def get_zell_cycle(self, zelle):
+        return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
 
     def insert_zell(self, dic):
         """
@@ -166,6 +211,20 @@ class Database:
             return None
         except Exception as e:
             return e
+
+    def get_zellen(self, zellen_id,zellen_cycle):
+        sql = "SELECT * FROM Zellen WHERE 1=1"
+        params = []
+        if zellen_id is not None:
+            sql += " AND id = %s"
+            params.append(zellen_id)
+
+        if zellen_cycle is not None:
+            sql += " AND Cycle = %s"
+            params.append(zellen_cycle)
+
+        zellen = self.query(sql, params=params)
+        return zellen
 
     def query(self, sql_query, params=None):
         """

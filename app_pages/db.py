@@ -11,15 +11,15 @@ def add_data_app():
 
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
-    alle_zellen = DB.query("SELECT DISTINCT id FROM Zellen")
+    alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen)
-    last_cycle = DB.query(f"SELECT MAX(Cycle) FROM Zellen WHERE id = '{zelle}'")
+    last_cycle = DB.get_zell_cycle(zelle)
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
     cycle = con2.number_input("Zyklus eingeben", min_value=0, max_value=1000, value=last_cycle, step=1)
     folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
 
     try:
-        datei_liste = DB.query("SELECT DISTINCT Datei, Cycle, Zelle FROM Datapoints")
+        datei_liste = DB.get_all_files()
     except Exception as e:
         con2.error(f"Fehler beim Abrufen der Datenbank: {e}")
         datei_liste = None
@@ -34,7 +34,7 @@ def add_data_app():
             mpr_files = None
         if mpr_files is not None:
             # DF mit allen Dateien und Status und gefilterten Dateien
-            gespeicherte_dateien = [row[0] for row in datei_liste]
+            gespeicherte_dateien = datei_liste['name'].values
             import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in mpr_files])
             import_files["Status"] = import_files["Datei"].apply(lambda f: status_func(f, gespeicherte_dateien, folder))
             col1, col2 = con2.columns([4,1])

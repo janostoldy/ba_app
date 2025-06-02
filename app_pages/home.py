@@ -9,7 +9,6 @@ def home_app():
     try:
         if "DB" not in st.session_state or st.session_state["DB"] is None:
             st.session_state["DB"] = Database("Formierung")
-            st.session_state["DB"].create_table()
             st.success("Datenbank verbunden")
     except Exception as e:
         con1 = st.container(border=True)
@@ -26,7 +25,6 @@ def home_app():
         if con1.button("Datenbank verbinden", type="primary", use_container_width=True):
             try:
                 st.session_state["DB"] = Database("Formierung")
-                st.session_state["DB"].create_table()
                 con1.success("Datenbank verbunden")
                 st.rerun()
             except Exception as e:
