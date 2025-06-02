@@ -13,7 +13,7 @@ class EIS_Analyse:
 
     def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
         # Erstelle einen Hash-Wert für die Zeile
-        hash_input = f"{Messung}/{freqHz}/{cycle}/{soc}/{ima}/{zelle}"
+        hash_input = f"{Messung}{freqHz}{cycle}{soc}{ima}{zelle}"
         return hashlib.sha256(hash_input.encode()).hexdigest()
 
     def calc_niquist_data(self, eis_data,save_data):
@@ -43,18 +43,51 @@ class EIS_Analyse:
         
         niquist_df = pd.DataFrame(results)
         if save_data:
-            self.DB.df_in_sqlite(df=niquist_df, table_name='Niquist')
+            self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
 
     def analyze_data(self, file_path, cycle, Zelle, save_data):
-        for data_name in file_path:
+        import streamlit as st
+        for data_path in file_path:
             #print('Processing: ' + os.path.basename(data_name))
-            mpr_file = BioLogic.MPRfile(data_name)
+            data_name = os.path.basename(data_path)
+            mpr_file = BioLogic.MPRfile(data_path)
             df = pd.DataFrame(mpr_file.data)
             df = df.rename(columns=mes_spalten)
+
+            if 'ZOhm' not in df.columns:
+                cycle_index = df[((df['flags'] == 55) | (df['flags'] == 183))]
+                if len(cycle_index) == 0:
+                    cycle_index = df[(df['flags'] == 33)]
+                    if len(cycle_index) != 1:
+                        cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
+
+                if len(cycle_index) == 0:
+                    self.DB.insert_file(data_name, cycle, Zelle, f"Ruhe Zyklen oder falsche Flaggen")
+                    continue
+                cycle = cycle + len(cycle_index)
+                qmax = max(df['QAh'])
+                hash_input = f"{Zelle}{cycle}{qmax}"
+                hash = hashlib.sha256(hash_input.encode()).hexdigest()
+                dic = {
+                    "hash": hash,
+                    "id": Zelle,
+                    "Cycle": cycle,
+                    "QMax": qmax,
+                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}"
+                }
+                self.DB.insert_zell(dic)
+                self.DB.insert_file(data_name, cycle, Zelle, f"{len(cycle_index)} Aeging Zyklen")
+                continue
 
             # Eis Messung
             start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
             end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
+            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
+                start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqHz'] > 0)].index
+                end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqHz'] > 0)].index
+            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
+                raise Exception('No EIS data found in file or wrong flags.')
+
             eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
             eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
             eis_ImA = df.ImA[start_eis_indices - 1]
@@ -78,8 +111,13 @@ class EIS_Analyse:
                 eis.loc[:,'Datei'] = os.path.basename(data_name)
             self.calc_niquist_data(eis_values,save_data)
 
+
             # Deis Messung
             deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)].copy()
+            if len(deis_values) == 0:
+                deis_values = df[((df['flags'] == 101) | (df['flags'] == 229)) & (df['freqHz'] > 0)].copy()
+            if len(deis_values) == 0:
+                raise Exception('No DEIS data found in file or wrong flags.')
             deis_indices = deis_values.index
             deis_soc = round(df.QQomAh[deis_indices - 1] / 125) * 125
             deis_ImA = df.ImA[deis_indices - 1]
@@ -107,10 +145,10 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
+                self.DB.insert_file(data_name, cycle, Zelle, "Eis Messung")
+
 
     def insert_data(self, eis_values, deis_values, data_name):
-        print('[Info] Insert Data from: ' + data_name)
-        # Save Eis and Deis values to SQLite database
         for eis in eis_values:
-            self.DB.df_in_sqlite(df=eis, table_name='Datapoints')
-        self.DB.df_in_sqlite(df=deis_values, table_name='Datapoints')
+            self.DB.df_in_DB(df=eis, table_name='Datapoints')
+        self.DB.df_in_DB(df=deis_values, table_name='Datapoints')

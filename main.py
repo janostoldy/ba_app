@@ -2,7 +2,7 @@ from Classes.datenbank import Database
 from Classes.datenanalyse import EIS_Analyse
 
 try:
-    DB = Database("Eis_Analyse.db","Volumes/ge95his/Datenbank")
+    DB = Database()
     DA = EIS_Analyse(DB)
 
     print('[Info] Open Connection')

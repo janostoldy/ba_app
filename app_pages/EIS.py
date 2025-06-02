@@ -1,22 +1,28 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from streamlit import session_state
+
 from src.plotting_functions import extract_sort_keys
 
-def Plot_EIS(Plot_Data):
+def Plot_EIS():
+    DB = session_state["DB"]
+    all_cycles = DB.query("SELECT DISTINCT Cycle FROM Datapoints")
+    all_socs = DB.query("SELECT DISTINCT ROUND(QQomAh / 25.0) * 25 AS QQomAh FROM Datapoints")
+
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Cycles")
         selected_cycles = []
-        for cycle in Plot_Data['Cycles']:
-            if st.checkbox(f"Cycle {cycle}", key=f"cycle_{cycle}"):
+        for cycle in all_cycles:
+            if st.checkbox(f"Cycle {cycle[0]}", key=f"cycle_{cycle[0]}"):
                 selected_cycles.append(cycle)
 
     with col2:
         st.subheader("Qcell")
         selected_socs = []
-        for soc in Plot_Data['SoCs']:
-            if st.checkbox(f"Qcell: {soc} mAh", key=f"Qcell_{soc}"):
+        for soc in all_socs:
+            if st.checkbox(f"Qcell: {soc[0]} mAh", key=f"Qcell_{soc[0]}"):
                 selected_socs.append(soc)
     st.divider()
     names = list(Plot_Data['Time_Plots'])
@@ -39,3 +45,5 @@ def Plot_EIS(Plot_Data):
                 plot_data = pd.concat([plot_data, df_temp], ignore_index=True)
         fig = px.line(plot_data, x=x_values, y=y_values, color="Plot", title="Verläufe der EIS-Messung", log_x=x_log, log_y=y_log)
         return fig, plot_data
+    else:
+        return None, None

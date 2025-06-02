@@ -1,45 +1,49 @@
-import sqlite3
+import mysql.connector
+import pandas as pd
+from dotenv import load_dotenv
+import os
 
 class Database:
-    def __init__(self, db_name="Eis_Analyse.db", db_path=""):
-        self.db_name = db_name
-        self.db_path = db_path if db_path else "./"
-        self.full_path = f"/{self.db_path.rstrip('/')}/{self.db_name}"
-        self.conn = sqlite3.connect(
-            self.full_path,
-            check_same_thread=False
+    def __init__(self, db_name="Formierung"):
+        load_dotenv()
+        self.conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST") ,
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=db_name
         )
         self.cur = self.conn.cursor()
 
     def create_table(self):
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Datapoints (
-                hash TEXT PRIMARY KEY,
+                hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
+                SOC INT,
                 Calc_ImA INT,
                 Cycle INT,
-                EcellV REAL,
-                freqHz REAL,
-                TemperatureC REAL,
-                ZOhm REAL,
-                PhaseZdeg REAL,
-                calc_ReZOhm REAL,
-                calc_ImZOhm REAL,      
-                QchargemAh REAL,
-                CapacitymAh REAL,
-                QQomAh REAL,
-                EnergyWh REAL,
-                ImA REAL,
-                times REAL,
-                calc_times REAL,
-                Datei VARCHAR,
-                Typ VARCHAR
-                Zelle VARCHAR
+                EcellV DOUBLE,
+                freqHz DOUBLE,
+                TemperatureC DOUBLE,
+                ZOhm DOUBLE,
+                PhaseZdeg DOUBLE,
+                calc_ReZOhm DOUBLE,
+                calc_ImZOhm DOUBLE,      
+                QchargemAh DOUBLE,
+                CapacitymAh DOUBLE,
+                QQomAh DOUBLE,
+                EnergyWh DOUBLE,
+                ImA DOUBLE,
+                times DOUBLE,
+                calc_times DOUBLE,
+                Datei VARCHAR(255),
+                Typ VARCHAR(255),
+                Zelle VARCHAR(255)
             )
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Niquist (
-                hash TEXT PRIMARY KEY,
+                hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
                 Calc_ImA INT,
                 Zyklus INT,
@@ -51,11 +55,40 @@ class Database:
                 freq_Max REAL
             )
         """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Zellen (
+                hash VARCHAR(255) PRIMARY KEY,
+                id VARCHAR(20),
+                Cycle INT,
+                QMax REAL,
+                Info VARCHAR(255)
+            )
+        """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS Files (
+                name  VARCHAR(255) PRIMARY KEY,
+                name  VARCHAR(50),
+                Datum Date,
+                Info  VARCHAR(255)
+            )
+        """)
         self.conn.commit()
 
-    def df_in_sqlite(self, df, table_name):
+    def df_in_DB(self, df, table_name):
+        """
+        Fügt einen DataFrame in die angegebene Tabelle der Datenbank ein (mit UPSERT-Logik).
+
+        - Prüft, ob die Spalten des DataFrames mit denen der Tabelle übereinstimmen.
+        - Erwartet eine Spalte 'hash' als eindeutigen Schlüssel.
+        - Nutzt Batch-Insert für Effizienz.
+        - Bei Konflikt (gleicher 'hash') werden die Werte aktualisiert.
+
+        :param df: DataFrame mit den einzufügenden Daten.
+        :param table_name: Name der Zieltabelle als String.
+        """
         # Prüfe Spalten der Datenbank
-        db_columns = [row[1] for row in self.cur.execute(f"PRAGMA table_info({table_name})").fetchall()]
+        self.cur.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table_name}'")
+        db_columns = [row[0] for row in self.cur.fetchall()]
         df = df[[col for col in df.columns if col in db_columns]]
 
         if df.empty:
@@ -67,13 +100,14 @@ class Database:
 
         # SQLite UPSERT-Vorbereitung
         columns = df.columns.tolist()
-        placeholders = ", ".join(["?"] * len(columns))
-        update_clause = ", ".join([f"{col}=excluded.{col}" for col in columns if col != 'hash'])
+        placeholders = ", ".join(["%s"] * len(columns))
+        update_clause = ", ".join([f"{col}=VALUES({col})" for col in columns if col != 'hash'])
 
         sql = f"""
         INSERT INTO {table_name} ({", ".join(columns)})
         VALUES ({placeholders})
-        ON CONFLICT(hash) DO UPDATE SET {update_clause}
+        ON DUPLICATE KEY UPDATE 
+        {update_clause}
         """
 
         # Daten als Liste von Tupeln vorbereiten
@@ -83,16 +117,131 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
+    def insert_file(self, file, cycle, Info="", Zelle=""):
+        sql = """
+            INSERT INTO Files (name, Datum, Cycle, Zelle, Info)
+            VALUES (%s, CURRENT_DATE(), %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            Info = VALUES(Info), Datum = CURRENT_DATE(), Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
+        """
+        values = (file, cycle, Zelle, Info)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def delete_file(self, file):
+        sql = """
+            DELETE FROM Files 
+            WHERE name = (%s)
+        """
+        values = (file,)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def get_all_files(self):
+        return self.query("SELECT name, Cycle, Zelle FROM Files")
+
+    def get_all_zells(self):
+        return self.query("SELECT DISTINCT id FROM Zellen")
+
+    def get_zell_cycle(self, zelle):
+        return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
+
+    def insert_zell(self, dic):
+        """
+            Füge eine Dataframe zu der Tabelle Zellen hinzu
+
+            :param dic: Die zu hinzufügenden Daten als Dictonary.
+        """
+        sql = """
+        INSERT INTO Zellen (hash, id, Cycle, QMax, Info)
+        VALUES (%s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE 
+        Info = VALUES(Info)
+        """
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"])
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def update_zell(self, dic, hash):
+        """
+            Update die Werte einer Zelle in der Tabelle Zellen.
+
+            :param dic: Die zu hinzufügenden Daten als Dictonary.
+            :param hash: Hash Wert der Zelle, die geupdated wird.
+        """
+        sql = """
+        UPDATE Zellen
+        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s
+        WHERE hash = %s
+        """
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], hash)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def delete_zell(self, hash):
+        """
+            Lösche eine Zelle aus der Tabelle Zellen.
+
+            :param hash: Hash Wert der Zelle, die geupdated wird.
+        """
+        sql = """
+        DELETE FROM Zellen
+        WHERE hash = %s
+        """
+        values = (hash,)
+        try:
+            self.cur.execute(sql, values)
+            self.conn.commit()
+            return None
+        except Exception as e:
+            return e
+
+    def get_zellen(self, zellen_id,zellen_cycle):
+        sql = "SELECT * FROM Zellen WHERE 1=1"
+        params = []
+        if zellen_id is not None:
+            sql += " AND id = %s"
+            params.append(zellen_id)
+
+        if zellen_cycle is not None:
+            sql += " AND Cycle = %s"
+            params.append(zellen_cycle)
+
+        zellen = self.query(sql, params=params)
+        return zellen
+
     def query(self, sql_query, params=None):
         """
         Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
 
         :param sql_query: Die SQL-Abfrage als String.
-        :param params: Optional, Parameter für die Abfrage als Tuple.
+        :param params: Parameter für die Abfrage, optional.
         :return: Ergebnisse der Abfrage als Liste von Tupeln.
         """
-        self.cur.execute(sql_query, params or ())
-        return self.cur.fetchall()
+        self.cur.execute(sql_query, params)
+        data = self.cur.fetchall()
+        try:
+            columns = [desc[0] for desc in self.cur.description]
+            df = pd.DataFrame(data, columns=columns)
+            return df
+        except Exception:
+            return data
 
     def close(self):
         self.conn.close()
