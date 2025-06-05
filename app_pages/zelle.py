@@ -34,7 +34,8 @@ def zellen_hinzufuegen():
             "id": id,
             "Cycle": cycle,
             "QMax": qmax,
-            "Info": info
+            "Info": info,
+            "Art": "Manuell"
         }
         with st.spinner("Daten hinzufügen...", show_time=True):
             DB = st.session_state["DB"]
@@ -70,7 +71,8 @@ def zelle_edit():
             "id": id,
             "Cycle": cycle,
             "QMax": qmax,
-            "Info": info
+            "Info": info,
+            "Art": "Manuell bearbeitet"
         }
         with st.spinner("Daten Updaten...", show_time=True):
             e = DB.update_zell(dic, zelle["hash"])
@@ -84,7 +86,6 @@ def zelle_edit():
             e = DB.delete_zell(zelle["hash"])
         if e is None:
             st.success(f"Zelle {id} wurde erfolgreich gelöscht")
-            st.rerun()
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
 

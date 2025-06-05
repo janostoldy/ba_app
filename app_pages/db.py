@@ -75,18 +75,52 @@ def add_data_app():
             con2.error("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
 
     if 'datei_liste' in locals():
-        df = pd.DataFrame(datei_liste)
-        df.columns = ['Datei', 'Zyklus', 'Zelle']
+        #df.columns = ['Datei', 'Zyklus', 'Zelle']
         st.write("Dateien in Datenbank:")
-        st.dataframe(df)
+        st.dataframe(datei_liste)
+
+@st.dialog("Löschen bestätigen",width="small")
+def file_loeschen(files):
+    st.write("Wollen sie die Zelle wirklich löschen?")
+    DB = st.session_state["DB"]
+    st.write(files)
+    if st.button("Endgültig Löschen", type="primary", use_container_width=True):
+        DB.delete_file(files)
+
 
 def delete_data_app():
     st.title("Daten löschen")
+    DB = st.session_state["DB"]
 
     con1 = st.container(border=True)
     con1.header("Data Filtern")
-    zelle = con1.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
-    cyle = con1.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
-    DB = st.session_state["DB"]
-    data = DB.query(f"SELECT * FROM Datapoints")
-    con1.dataframe(data)
+    alle_zellen = DB.get_all_zells()
+    zelle = con1.selectbox("Zellen eingeben", alle_zellen)
+    all_cycles = DB.get_zell_cycle(zelle,Max=False)
+    all_cycles = all_cycles.sort_values(by='Cycle').values
+
+    cycle_sel = con1.multiselect(
+        "Zyklus auswählen?",
+        all_cycles,
+    )
+
+    if not cycle_sel:
+        cycle = all_cycles.flatten().tolist()
+    else:
+        cycle = cycle_sel
+    data = pd.DataFrame()
+    for cyc in cycle:
+        dat = DB.get_file(cyc, zelle)
+        data = pd.concat([data, dat], ignore_index=True)
+        st.session_state.filter_files = data
+
+    event = con1.dataframe(
+        st.session_state.filter_files,
+        key="data",
+        on_select="rerun",
+        selection_mode="multi-row",
+    )
+    selected_rows = st.session_state.filter_files.iloc[event.selection.rows]
+
+    if con1.button("Löschen", type="primary", use_container_width=True):
+        file_loeschen(selected_rows["name"])

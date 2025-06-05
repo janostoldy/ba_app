@@ -62,7 +62,7 @@ class EIS_Analyse:
                         cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
 
                 if len(cycle_index) == 0:
-                    self.DB.insert_file(data_name, cycle, Zelle, f"Ruhe Zyklen oder falsche Flaggen")
+                    self.DB.insert_file(data_name, cycle, f"Ruhe Zyklen oder falsche Flaggen",Zelle)
                     continue
                 cycle = cycle + len(cycle_index)
                 qmax = max(df['QAh'])
@@ -73,10 +73,12 @@ class EIS_Analyse:
                     "id": Zelle,
                     "Cycle": cycle,
                     "QMax": qmax,
-                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}"
+                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}",
+                    "Art": "Auto_Ageing"
+                    "Datei": data_name,
                 }
                 self.DB.insert_zell(dic)
-                self.DB.insert_file(data_name, cycle, Zelle, f"{len(cycle_index)} Aeging Zyklen")
+                self.DB.insert_file(data_name, cycle, f"{len(cycle_index)} Aeging Zyklen", Zelle)
                 continue
 
             # Eis Messung
@@ -145,7 +147,7 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
-                self.DB.insert_file(data_name, cycle, Zelle, "Eis Messung")
+                self.DB.insert_file(data_name, cycle, "Eis Messung", Zelle)
 
 
     def insert_data(self, eis_values, deis_values, data_name):

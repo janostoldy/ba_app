@@ -53,6 +53,7 @@ class Database:
                 Im_Max REAL,
                 Re_Max REAL,
                 freq_Max REAL
+                Datei VARCHAR(255)
             )
         """)
         self.cur.execute("""
@@ -61,15 +62,18 @@ class Database:
                 id VARCHAR(20),
                 Cycle INT,
                 QMax REAL,
-                Info VARCHAR(255)
+                Info VARCHAR(255),
+                Art VARCHAR(20),
+                Datei VARCHAR(255)
             )
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Files (
                 name  VARCHAR(255) PRIMARY KEY,
-                name  VARCHAR(50),
                 Datum Date,
-                Info  VARCHAR(255)
+                Info  VARCHAR(255),
+                Cycle INT,
+                Zelle VARCHAR(255)
             )
         """)
         self.conn.commit()
@@ -117,14 +121,21 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
+    def delete_data(self,file):
+        sql = f"""DELETE FROM Datapoints WHERE Datei='{file.name}' """
+        self.cur.execute(sql)
+        sql = f"""DELETE FROM Datapoints WHERE Datei='{file.name}' """
+        self.cur.execute(sql)
+        self.conn.commit()
+
     def insert_file(self, file, cycle, Info="", Zelle=""):
         sql = """
-            INSERT INTO Files (name, Datum, Cycle, Zelle, Info)
+            INSERT INTO Files (name, Datum, Info, Cycle, Zelle)
             VALUES (%s, CURRENT_DATE(), %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
             Info = VALUES(Info), Datum = CURRENT_DATE(), Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
         """
-        values = (file, cycle, Zelle, Info)
+        values = (file, Info, cycle, Zelle)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -133,26 +144,38 @@ class Database:
             return e
 
     def delete_file(self, file):
-        sql = """
-            DELETE FROM Files 
-            WHERE name = (%s)
-        """
-        values = (file,)
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
+        tables = ["Datapoints", "Files", "Zellen", "Niquist"]
+        for table in tables:
+            if table == "Datapoints":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file.name,))
+            elif table == "Files":
+                sql = f"DELETE FROM {table} WHERE name=%s"
+                self.cur.execute(sql, (file.name,))
+            elif table == "Zellen":
+                sql = f"DELETE FROM {table} WHERE id=%s"
+                self.cur.execute(sql, (file.name,))
+            elif table == "Niquist":
+                sql = f"DELETE FROM {table} WHERE hash=%s"
+                self.cur.execute(sql, (file.name,))
+        self.conn.commit()
 
     def get_all_files(self):
-        return self.query("SELECT name, Cycle, Zelle FROM Files")
+        return self.query("SELECT * FROM Files")
+
+    def get_file(self, cycle, zelle):
+        sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s """
+        values = (cycle, zelle)
+        return self.query(sql, values)
 
     def get_all_zells(self):
         return self.query("SELECT DISTINCT id FROM Zellen")
 
-    def get_zell_cycle(self, zelle):
-        return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
+    def get_zell_cycle(self, zelle, Max=True):
+        if Max:
+            return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
+        else:
+            return self.query("SELECT Cycle FROM Zellen WHERE id = %s", (zelle,))
 
     def insert_zell(self, dic):
         """
@@ -161,12 +184,12 @@ class Database:
             :param dic: Die zu hinzufügenden Daten als Dictonary.
         """
         sql = """
-        INSERT INTO Zellen (hash, id, Cycle, QMax, Info)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO Zellen (hash, id, Cycle, QMax, Info, Art)
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE 
         Info = VALUES(Info)
         """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"])
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"])
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -183,10 +206,10 @@ class Database:
         """
         sql = """
         UPDATE Zellen
-        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s
+        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s, Art = %s
         WHERE hash = %s
         """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], hash)
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], hash)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
