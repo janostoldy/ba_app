@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from src.plotting_df import highlight_status, status_func
 from Classes.datenanalyse import EIS_Analyse
 import os
@@ -56,7 +57,7 @@ def add_data_app():
             if "filter_files" not in st.session_state or st.session_state.filter_files.equals(filter_files) == False:
                  st.session_state.filter_files = filter_files
             event = con2.dataframe(
-                st.session_state.filter_files.style.applymap(highlight_status, subset=["Status"]),
+                st.session_state.filter_files.style.map(highlight_status, subset=["Status"]),
                 key="data",
                 on_select="rerun",
                 selection_mode="multi-row",
@@ -85,11 +86,36 @@ def file_loeschen(files):
     DB = st.session_state["DB"]
     st.write(files)
     if st.button("Endgültig Löschen", type="primary", use_container_width=True):
-        DB.delete_file(files)
+        for f in files:
+            DB.delete_file(f)
+        st.rerun()
+
+@st.dialog("Daten bearbeiten",width="large")
+def file_bearbeiten(files):
+    st.write("Noch nicht fertig, ändert nur Files")
+    DB = st.session_state["DB"]
+    alle_zellen = DB.get_all_zells()
+    for index, row in files.iterrows():
+        st.divider()
+        con = st.container()
+        con.write(f"Datei {row['name']} bearbeiten:")
+        col1, col2, col3, col4 = con.columns([2,1,1,1])
+        info = col1.text_input("Datei Infos", value=row["Info"], key=index*4)
+        cycle = col2.number_input("Zyklus", value=row["Cycle"], min_value=1, step=1, key=index*4+1)
+        ind = np.where(alle_zellen == row["Zelle"])[0][0]
+        zelle = col3.selectbox("Zellen eingeben", alle_zellen, index=int(ind), key=index*4+2)
+        col4.subheader("")
+        if col4.button("Bestätigen", type="primary", use_container_width=True, key=index*4+3):
+            try:
+                DB.insert_file(row["name"], cycle, info, zelle)
+                st.rerun()
+            except Exception as e:
+                con.error(f"Fehler beim ändern der Daten: {e}")
 
 
-def delete_data_app():
-    st.title("Daten löschen")
+
+def edit_data_app():
+    st.title("Daten bearbeiten")
     DB = st.session_state["DB"]
 
     con1 = st.container(border=True)
@@ -122,5 +148,14 @@ def delete_data_app():
     )
     selected_rows = st.session_state.filter_files.iloc[event.selection.rows]
 
-    if con1.button("Löschen", type="primary", use_container_width=True):
-        file_loeschen(selected_rows["name"])
+    col1, col2 = con1.columns([1,4])
+    if col1.button("Löschen", type="secondary", use_container_width=True):
+        if selected_rows.empty:
+            con1.warning("Keine Daten ausgewählt!")
+        else:
+            file_loeschen(selected_rows["name"])
+    if col2.button("Bearbeiten", type="primary", use_container_width=True):
+        if selected_rows.empty:
+            con1.warning("Keine Daten ausgewählt!")
+        else:
+            file_bearbeiten(selected_rows)

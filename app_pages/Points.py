@@ -3,7 +3,11 @@ import plotly.express as px
 import pandas as pd
 from src.plotting_functions import extract_sort_keys
 
-def Plot_Points(Plot_Data):
+def Plot_Points(get_all_niquist=None):
+    DB = st.session_state['DB']
+    Data = DB.get_all_niquist()
+    st.write(Data)
+
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Cycles")

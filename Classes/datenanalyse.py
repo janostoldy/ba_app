@@ -37,7 +37,8 @@ class EIS_Analyse:
                 'freq_Min': freq.iloc[minima_indices],
                 'Im_Max': im.iloc[maxima_indices],
                 'Re_Max': re.iloc[maxima_indices],
-                'freq_Max': freq.iloc[maxima_indices]
+                'freq_Max': freq.iloc[maxima_indices],
+                'Datei': eis['Datei'].values[0]
             }
             results.append(temp)
         
@@ -46,7 +47,6 @@ class EIS_Analyse:
             self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
 
     def analyze_data(self, file_path, cycle, Zelle, save_data):
-        import streamlit as st
         for data_path in file_path:
             #print('Processing: ' + os.path.basename(data_name))
             data_name = os.path.basename(data_path)
@@ -57,7 +57,7 @@ class EIS_Analyse:
             if 'ZOhm' not in df.columns:
                 cycle_index = df[((df['flags'] == 55) | (df['flags'] == 183))]
                 if len(cycle_index) == 0:
-                    cycle_index = df[(df['flags'] == 33)]
+                    cycle_index = df[((df['flags'] == 33)| (df['flags'] == 51))]
                     if len(cycle_index) != 1:
                         cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
 
@@ -74,8 +74,8 @@ class EIS_Analyse:
                     "Cycle": cycle,
                     "QMax": qmax,
                     "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}",
-                    "Art": "Auto_Ageing"
-                    "Datei": data_name,
+                    "Art": "Auto_Ageing",
+                    "Datei": data_name
                 }
                 self.DB.insert_zell(dic)
                 self.DB.insert_file(data_name, cycle, f"{len(cycle_index)} Aeging Zyklen", Zelle)

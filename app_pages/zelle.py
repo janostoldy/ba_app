@@ -6,9 +6,10 @@ from streamlit import session_state
 
 def zelle_app():
     st.title("Zellen")
-    zellen_filter()
+    con1 = st.container(border=True)
+    zellen_filter(con1)
 
-    col1, col2 = st.columns(2)
+    col1, col2 = con1.columns(2)
     if col1.button("Daten oder Zelle hinzufügen", use_container_width= True, type="primary"):
         zellen_hinzufuegen()
     if col2.button("Daten bearbeiten", use_container_width= True, type="secondary"):
@@ -89,9 +90,8 @@ def zelle_edit():
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
 
-def zellen_filter():
+def zellen_filter(con):
     DB = st.session_state["DB"]
-    con = st.container(border=True)
     con.subheader("Zellen Filtern")
     alle_zellen = DB.query("SELECT DISTINCT id FROM Zellen")
     alle_cycle = DB.query("SELECT DISTINCT Cycle FROM Zellen")

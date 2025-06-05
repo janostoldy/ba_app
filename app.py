@@ -7,7 +7,7 @@ from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.EIS import Plot_EIS
 from app_pages.Points import Plot_Points
-from app_pages.db import add_data_app, delete_data_app
+from app_pages.db import add_data_app, edit_data_app
 from app_pages.zelle import zelle_app
 from app_pages.analyse import analyse_app
 
@@ -72,7 +72,7 @@ if st.session_state["authenticated"]:
         )
     elif user.role == "admin":
         add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
-        delete_data_page = st.Page(delete_data_app, title="Daten löschen", icon="📰")
+        delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="📰")
         zelle_page = st.Page(zelle_app, title="Zelle", icon="📰")
         pg = st.navigation(
             {

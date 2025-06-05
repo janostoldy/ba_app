@@ -121,19 +121,12 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
-    def delete_data(self,file):
-        sql = f"""DELETE FROM Datapoints WHERE Datei='{file.name}' """
-        self.cur.execute(sql)
-        sql = f"""DELETE FROM Datapoints WHERE Datei='{file.name}' """
-        self.cur.execute(sql)
-        self.conn.commit()
-
     def insert_file(self, file, cycle, Info="", Zelle=""):
         sql = """
             INSERT INTO Files (name, Datum, Info, Cycle, Zelle)
-            VALUES (%s, CURRENT_DATE(), %s, %s, %s)
+            VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
-            Info = VALUES(Info), Datum = CURRENT_DATE(), Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
+            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
         """
         values = (file, Info, cycle, Zelle)
         try:
@@ -148,16 +141,16 @@ class Database:
         for table in tables:
             if table == "Datapoints":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file.name,))
+                self.cur.execute(sql, (file,))
             elif table == "Files":
                 sql = f"DELETE FROM {table} WHERE name=%s"
-                self.cur.execute(sql, (file.name,))
+                self.cur.execute(sql, (file,))
             elif table == "Zellen":
-                sql = f"DELETE FROM {table} WHERE id=%s"
-                self.cur.execute(sql, (file.name,))
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
             elif table == "Niquist":
-                sql = f"DELETE FROM {table} WHERE hash=%s"
-                self.cur.execute(sql, (file.name,))
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
         self.conn.commit()
 
     def get_all_files(self):
@@ -184,12 +177,12 @@ class Database:
             :param dic: Die zu hinzufügenden Daten als Dictonary.
         """
         sql = """
-        INSERT INTO Zellen (hash, id, Cycle, QMax, Info, Art)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO Zellen (hash, id, Cycle, QMax, Info, Art, Datei)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE 
         Info = VALUES(Info)
         """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"])
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], dic["Datei"])
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -248,6 +241,10 @@ class Database:
 
         zellen = self.query(sql, params=params)
         return zellen
+
+    def get_all_niquist(self):
+        sql = "SELECT * FROM Niquist"
+        return self.query(sql)
 
     def query(self, sql_query, params=None):
         """
