@@ -1,9 +1,17 @@
 import streamlit as st
+from streamlit import session_state
 import plotly.express as px
 import pandas as pd
-from streamlit import session_state
 
+from src.filtern import daten_filer
 from src.plotting_functions import extract_sort_keys
+
+def eis_app():
+    DB = session_state["DB"]
+    st.title("EIS Analyse")
+    con1 = st.container(border=True)
+    data = DB.get_all_eis()
+    cycle, zelle = daten_filer(con1, data)
 
 def Plot_EIS():
     DB = session_state["DB"]

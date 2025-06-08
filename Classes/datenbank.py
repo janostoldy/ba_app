@@ -301,6 +301,10 @@ class Database:
         points = self.query(sql, params=params)
         return data, points
 
+    def get_all_eis(self):
+        sql = "SELECT * FROM Files WHERE Typ = 'EIS'"
+        return self.query(sql)
+
     def query(self, sql_query, params=None):
         """
         Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.

@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import io
-from app_pages.EIS import Plot_EIS
+from app_pages.eis import Plot_EIS
 from app_pages.DEIS import Plot_DEIS
 from app_pages.Points import Plot_Points
 from src.plotting_functions import Get_Colors, extract_colors_from_soc

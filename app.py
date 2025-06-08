@@ -5,7 +5,7 @@ from app_pages.analyse import analyse_app
 from src.user import User, get_known_user
 from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
-from app_pages.EIS import Plot_EIS
+from app_pages.eis import eis_app
 from app_pages.Points import Plot_Points
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.zelle import zelle_app
@@ -55,7 +55,7 @@ if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
     analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
-    eis_page = st.Page(Plot_EIS, title="EIS", icon="📈")
+    eis_page = st.Page(eis_app, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")

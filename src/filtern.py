@@ -23,6 +23,7 @@ def zellen_filter(con):
     }
 
 def daten_filer(con,data):
+    con.subheader("Filter")
     alle_zellen = data["Zelle"].unique()
     zelle = con.multiselect("Zellen eingeben", alle_zellen)
     all_cycles = data["Cycle"].unique()
