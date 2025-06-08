@@ -5,8 +5,9 @@ from config import sql_spalten, mes_spalten
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks
+from scipy.ndimage import gaussian_filter1d
 
-class EIS_Analyse:
+class Analyse:
     def __init__(self, datenbank):
         # Initialisiere die Datenbankverbindung
         self.DB = datenbank
@@ -37,7 +38,8 @@ class EIS_Analyse:
                 'freq_Min': freq.iloc[minima_indices],
                 'Im_Max': im.iloc[maxima_indices],
                 'Re_Max': re.iloc[maxima_indices],
-                'freq_Max': freq.iloc[maxima_indices]
+                'freq_Max': freq.iloc[maxima_indices],
+                'Datei': eis['Datei'].values[0]
             }
             results.append(temp)
         
@@ -45,8 +47,7 @@ class EIS_Analyse:
         if save_data:
             self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
 
-    def analyze_data(self, file_path, cycle, Zelle, save_data):
-        import streamlit as st
+    def analyze_EIS_data(self, file_path, cycle, Zelle, save_data):
         for data_path in file_path:
             #print('Processing: ' + os.path.basename(data_name))
             data_name = os.path.basename(data_path)
@@ -57,12 +58,12 @@ class EIS_Analyse:
             if 'ZOhm' not in df.columns:
                 cycle_index = df[((df['flags'] == 55) | (df['flags'] == 183))]
                 if len(cycle_index) == 0:
-                    cycle_index = df[(df['flags'] == 33)]
+                    cycle_index = df[((df['flags'] == 33)| (df['flags'] == 51))]
                     if len(cycle_index) != 1:
                         cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
 
                 if len(cycle_index) == 0:
-                    self.DB.insert_file(data_name, cycle, Zelle, f"Ruhe Zyklen oder falsche Flaggen")
+                    self.DB.insert_file(data_name, cycle, f"Ruhe Zyklen oder falsche Flaggen",Zelle, "Rest")
                     continue
                 cycle = cycle + len(cycle_index)
                 qmax = max(df['QAh'])
@@ -73,10 +74,12 @@ class EIS_Analyse:
                     "id": Zelle,
                     "Cycle": cycle,
                     "QMax": qmax,
-                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}"
+                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}",
+                    "Art": "Auto_Ageing",
+                    "Datei": data_name
                 }
                 self.DB.insert_zell(dic)
-                self.DB.insert_file(data_name, cycle, Zelle, f"{len(cycle_index)} Aeging Zyklen")
+                self.DB.insert_file(data_name, cycle, f"{len(cycle_index)} Aeging Zyklen", Zelle, "DVA")
                 continue
 
             # Eis Messung
@@ -145,10 +148,53 @@ class EIS_Analyse:
 
             if save_data:
                 self.insert_data(eis_values, deis_values, data_name)
-                self.DB.insert_file(data_name, cycle, Zelle, "Eis Messung")
+                self.DB.insert_file(data_name, cycle, "Eis Messung", Zelle, "EIS")
 
+    def analys_OCV_data(self, file_path, cycle, Zelle, save_data):
+        for data_path in file_path:
+            data_name = os.path.basename(data_path)
+            mpr_file = BioLogic.MPRfile(data_path)
+            df = pd.DataFrame(mpr_file.data)
+            dva_raw = df.rename(columns=mes_spalten)
+
+            QQomAh_smoove = gaussian_filter1d(dva_raw["QQomAh"], sigma=5)
+            QQomAh_diff = np.gradient(QQomAh_smoove)
+            Ecell_smoove = gaussian_filter1d(dva_raw["EcellV"], sigma=5)
+            Ecell_diff = np.gradient(Ecell_smoove)
+            dva = Ecell_diff[:] / QQomAh_diff[:]
+            dva_smoove = gaussian_filter1d(dva, sigma=15)
+            last_value = dva_smoove[-1] * 1.2
+            first_index = np.where(np.isclose(dva_smoove, last_value, atol=1e-5))[0][0]
+
+            dva_edit = dva_raw[first_index:]
+            dva_edit['QQomAh_smoove'] = QQomAh_smoove[first_index:]
+            dva_edit['EcellV_smoove'] = Ecell_smoove[first_index:]
+            dva_edit['calc_dV_dQ'] = dva_smoove[first_index:]
+            dva_edit['cycle'] = cycle
+            dva_edit['Zelle'] = Zelle
+            dva_edit['Datei'] = data_name
+
+            Q0 = dva_edit['QQomAh_smoove'].iloc[0]
+            Qactual = dva_edit['QQomAh_smoove'].iloc[-1]
+            peaks = find_peaks(dva_edit['calc_dV_dQ'].values, distance=500, height=0.00035)[0]
+            Q1 = dva_edit['QQomAh_smoove'].iloc[peaks[3]]
+            Q2 = Qactual - Q1
+            Q3 = Qactual - dva_edit['QQomAh_smoove'].iloc[peaks[4]]
+
+            calc_Points = pd.DataFrame({
+                'Datei': [data_name] * 5,
+                'Point': ['Q0', 'Q1', 'Q2', 'Q3', 'Qactual'],
+                'Value': [Q0, Q1, Q2, Q3, Qactual],
+                'X_Start': [Q0, Q0, Qactual - Q2, Qactual - Q3, Q0],
+                'X_End': [Q0, Q1, Qactual, Qactual, Qactual],
+            })
+
+            if save_data:
+                self.DB.df_in_DB(df=dva_edit, table_name='DVA')
+                self.DB.df_in_DB(df=calc_Points, table_name='DVA_Points')
+                self.DB.insert_file(data_name, cycle, "DVA Analyse", Zelle, "DVA")
 
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:
-            self.DB.df_in_DB(df=eis, table_name='Datapoints')
-        self.DB.df_in_DB(df=deis_values, table_name='Datapoints')
+            self.DB.df_in_DB(df=eis, table_name='EIS')
+        self.DB.df_in_DB(df=deis_values, table_name='EIS')

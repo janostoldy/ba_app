@@ -3,7 +3,8 @@ import plotly.express as px
 import pandas as pd
 from src.plotting_functions import extract_sort_keys
 
-def Plot_DEIS(Plot_Data):
+def Plot_DEIS():
+
     col1, col2, col3 = st.columns(3)
     with col1:
         st.subheader("Cycles")

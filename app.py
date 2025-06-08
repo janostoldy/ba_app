@@ -7,9 +7,10 @@ from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.EIS import Plot_EIS
 from app_pages.Points import Plot_Points
-from app_pages.db import add_data_app, delete_data_app
+from app_pages.db import add_data_app, edit_data_app
 from app_pages.zelle import zelle_app
 from app_pages.analyse import analyse_app
+from app_pages.dva import dva_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -57,6 +58,7 @@ if st.session_state["authenticated"]:
     eis_page = st.Page(Plot_EIS, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
+    dva_page = st.Page(dva_app, title="DVA", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
         pg = st.navigation(
@@ -67,12 +69,13 @@ if st.session_state["authenticated"]:
                     eis_page,
                     deis_page,
                     points_page,
+                    dva_page,
                 ],
             }
         )
     elif user.role == "admin":
         add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
-        delete_data_page = st.Page(delete_data_app, title="Daten löschen", icon="📰")
+        delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="📰")
         zelle_page = st.Page(zelle_app, title="Zelle", icon="📰")
         pg = st.navigation(
             {
@@ -87,6 +90,7 @@ if st.session_state["authenticated"]:
                     eis_page,
                     deis_page,
                     points_page,
+                    dva_page,
                 ],
             }
         )

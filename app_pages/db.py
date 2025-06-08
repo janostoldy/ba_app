@@ -1,22 +1,27 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+
+from src.filtern import daten_filer
 from src.plotting_df import highlight_status, status_func
-from Classes.datenanalyse import EIS_Analyse
+from Classes.datenanalyse import Analyse
 import os
 
 def add_data_app():
     st.title("Daten hinzufügen")
     DB = st.session_state["DB"]
-    DA = EIS_Analyse(DB)
+    DA = Analyse(DB)
 
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
+    folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
     alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen)
+    typs = ["EIS/Ageing-Analyse","DVA-Analyse"]
+    typ = con2.selectbox("Analyse Art",typs)
     last_cycle = DB.get_zell_cycle(zelle)
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
     cycle = con2.number_input("Zyklus eingeben", min_value=0, max_value=1000, value=last_cycle, step=1)
-    folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
 
     try:
         datei_liste = DB.get_all_files()
@@ -56,7 +61,7 @@ def add_data_app():
             if "filter_files" not in st.session_state or st.session_state.filter_files.equals(filter_files) == False:
                  st.session_state.filter_files = filter_files
             event = con2.dataframe(
-                st.session_state.filter_files.style.applymap(highlight_status, subset=["Status"]),
+                st.session_state.filter_files.style.map(highlight_status, subset=["Status"]),
                 key="data",
                 on_select="rerun",
                 selection_mode="multi-row",
@@ -66,27 +71,88 @@ def add_data_app():
                 try:
                     file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
                     with st.spinner("Analysieren...",show_time=True):
-                        DA.analyze_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                        if typ == "EIS/Ageing-Analyse":
+                            DA.analyze_EIS_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                        elif typ == "DVA-Analyse":
+                            DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                         con2.success("Daten erfolgreich in Datenbank gespeichert.")
                         st.rerun()
                 except Exception as e:
-                    con2.error(f"Fehler beim Analysieren: {e}")
+                    con2.error(f"Fehler bei {typ}: {e}")
         else:
             con2.error("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
 
     if 'datei_liste' in locals():
-        df = pd.DataFrame(datei_liste)
-        df.columns = ['Datei', 'Zyklus', 'Zelle']
+        #df.columns = ['Datei', 'Zyklus', 'Zelle']
         st.write("Dateien in Datenbank:")
-        st.dataframe(df)
+        st.dataframe(datei_liste)
 
-def delete_data_app():
-    st.title("Daten löschen")
+@st.dialog("Löschen bestätigen",width="small")
+def file_loeschen(files):
+    st.write("Wollen sie die Zelle wirklich löschen?")
+    DB = st.session_state["DB"]
+    st.write(files)
+    if st.button("Endgültig Löschen", type="primary", use_container_width=True):
+        for f in files:
+            DB.delete_file(f)
+        st.rerun()
+
+@st.dialog("Daten bearbeiten",width="large")
+def file_bearbeiten(files):
+    st.write("Noch nicht fertig, ändert nur Files")
+    DB = st.session_state["DB"]
+    alle_zellen = DB.get_all_zells()
+    alle_typen = DB.get_file_typs()
+    for index, row in files.iterrows():
+        st.divider()
+        con = st.container()
+        con.write(f"Datei {row['name']} bearbeiten:")
+        info = con.text_input("Datei Infos", value=row["Info"], key=index*5)
+        col2, col3, col4, col5 = con.columns([3,3,2,2])
+        cycle = col2.number_input("Zyklus", value=row["Cycle"], min_value=0, step=1, key=index*5+1)
+        ind1 = np.where(alle_zellen == row["Zelle"])[0][0]
+        zelle = col3.selectbox("Zellen eingeben", alle_zellen, index=int(ind1), key=index*5+2)
+        ind2 = np.where(alle_typen == row["Typ"])[0][0]
+        typ = col4.selectbox("Typ", alle_typen, index=int(ind2), key=index*5+3)
+        col5.subheader("")
+        if col5.button("Bestätigen", type="primary", use_container_width=True, key=index*5+4):
+            try:
+                DB.insert_file(row["name"], cycle, info, zelle)
+                st.rerun()
+            except Exception as e:
+                con.error(f"Fehler beim ändern der Daten: {e}")
+
+def edit_data_app():
+    st.title("Daten bearbeiten")
+    DB = st.session_state["DB"]
 
     con1 = st.container(border=True)
-    con1.header("Data Filtern")
-    zelle = con1.text_input("Insert a Cell Name", placeholder="SN0001", value="SN0001")
-    cyle = con1.number_input("Insert a Start Cycle", min_value=0, max_value=1000, value=1, step=1)
-    DB = st.session_state["DB"]
-    data = DB.query(f"SELECT * FROM Datapoints")
-    con1.dataframe(data)
+    data = (DB.get_all_files())
+    cycle, zelle = daten_filer(con1,data)
+    data = pd.DataFrame()
+    for zel in zelle:
+        for cyc in cycle:
+            dat = DB.get_file(cyc, zel, typ="*")
+            data = pd.concat([data, dat], ignore_index=True)
+
+    st.session_state.filter_files = data
+
+    event = con1.dataframe(
+        st.session_state.filter_files,
+        key="data",
+        on_select="rerun",
+        selection_mode="multi-row",
+    )
+    selected_rows = st.session_state.filter_files.iloc[event.selection.rows]
+
+    col1, col2 = con1.columns([1,4])
+    if col1.button("Löschen", type="secondary", use_container_width=True):
+        if selected_rows.empty:
+            con1.warning("Keine Daten ausgewählt!")
+        else:
+            file_loeschen(selected_rows["name"])
+    if col2.button("Bearbeiten", type="primary", use_container_width=True):
+        if selected_rows.empty:
+            con1.warning("Keine Daten ausgewählt!")
+        else:
+            file_bearbeiten(selected_rows)

@@ -3,6 +3,9 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
+from app_pages import zelle
+
+
 class Database:
     def __init__(self, db_name="Formierung"):
         load_dotenv()
@@ -16,7 +19,7 @@ class Database:
 
     def create_table(self):
         self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Datapoints (
+            CREATE TABLE IF NOT EXISTS EIS (
                 hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
                 SOC INT,
@@ -53,6 +56,7 @@ class Database:
                 Im_Max REAL,
                 Re_Max REAL,
                 freq_Max REAL
+                Datei VARCHAR(255)
             )
         """)
         self.cur.execute("""
@@ -61,17 +65,47 @@ class Database:
                 id VARCHAR(20),
                 Cycle INT,
                 QMax REAL,
-                Info VARCHAR(255)
+                Info VARCHAR(255),
+                Art VARCHAR(20),
+                Datei VARCHAR(255)
             )
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Files (
                 name  VARCHAR(255) PRIMARY KEY,
-                name  VARCHAR(50),
                 Datum Date,
-                Info  VARCHAR(255)
+                Info  VARCHAR(255),
+                Cycle INT,
+                Zelle VARCHAR(255)
             )
         """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS DVA (              
+                Datei VARCHAR(255),
+´               TemperatureC DOUBLE,
+                QchargemAh DOUBLE,
+                CapacitymAh DOUBLE,
+                QQomAh DOUBLE,
+                EnergyWh DOUBLE,
+                ImA DOUBLE,
+                times DOUBLE,
+                EcellV DOUBLE,
+                QQomAh_smoove DOUBLE,
+                EcellV_smoove DOUBLE,
+                calc_dV_dQ DOUBLE,
+                PRIMARY KEY (Datei, times)
+            );
+        """)
+        self.cur.execute("""
+             CREATE TABLE IF NOT EXISTS DVA_Points (
+                 Datei         VARCHAR(255),
+                 Point         VARCHAR(10),
+                 Value         DOUBLE,
+                 X_Start       DOUBLE,
+                 X_END         DOUBLE,
+                 PRIMARY KEY (Datei, Point)
+             );
+             """)
         self.conn.commit()
 
     def df_in_DB(self, df, table_name):
@@ -94,11 +128,7 @@ class Database:
         if df.empty:
             return
 
-        # Stelle sicher, dass 'hash' vorhanden ist (Pflicht für UPSERT)
-        if 'hash' not in df.columns:
-            raise ValueError("DataFrame muss eine 'hash'-Spalte enthalten.")
-
-        # SQLite UPSERT-Vorbereitung
+        # SQL UPSERT-Vorbereitung
         columns = df.columns.tolist()
         placeholders = ", ".join(["%s"] * len(columns))
         update_clause = ", ".join([f"{col}=VALUES({col})" for col in columns if col != 'hash'])
@@ -117,14 +147,14 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
-    def insert_file(self, file, cycle, Info="", Zelle=""):
+    def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
         sql = """
-            INSERT INTO Files (name, Datum, Cycle, Zelle, Info)
-            VALUES (%s, CURRENT_DATE(), %s, %s, %s)
+            INSERT INTO Files (name, Datum, Info, Cycle, Zelle, Typ)
+            VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
-            Info = VALUES(Info), Datum = CURRENT_DATE(), Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
+            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle), Typ = VALUES(Typ)
         """
-        values = (file, cycle, Zelle, Info)
+        values = (file, Info, cycle, Zelle, Typ)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -133,26 +163,55 @@ class Database:
             return e
 
     def delete_file(self, file):
-        sql = """
-            DELETE FROM Files 
-            WHERE name = (%s)
-        """
-        values = (file,)
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
+        tables = ["EIS", "Files", "Zellen", "Niquist", "DVA", "DVA_Points"]
+        for table in tables:
+            if table == "EIS":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "Files":
+                sql = f"DELETE FROM {table} WHERE name=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "Zellen":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "Niquist":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "DVA":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "DVA_Points":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+        self.conn.commit()
 
     def get_all_files(self):
-        return self.query("SELECT name, Cycle, Zelle FROM Files")
+        return self.query("SELECT * FROM Files")
+
+    def get_file(self, cycle, zelle, typ):
+        if typ == "*":
+            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s"""
+            values = (cycle, zelle)
+        else:
+            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s AND Typ=%s"""
+            values = (cycle, zelle, typ)
+        return self.query(sql, values)
+
+    def get_file_typs(self):
+        sql = f"""SELECT DISTINCT Typ FROM Files """
+        return self.query(sql)
 
     def get_all_zells(self):
         return self.query("SELECT DISTINCT id FROM Zellen")
 
-    def get_zell_cycle(self, zelle):
-        return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
+    def get_all_cycles(self):
+        return self.query("SELECT DISTINCT Cycle FROM Zellen")
+
+    def get_zell_cycle(self, zelle, Max=True):
+        if Max:
+            return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
+        else:
+            return self.query("SELECT Cycle FROM Zellen WHERE id = %s", (zelle,))
 
     def insert_zell(self, dic):
         """
@@ -161,12 +220,12 @@ class Database:
             :param dic: Die zu hinzufügenden Daten als Dictonary.
         """
         sql = """
-        INSERT INTO Zellen (hash, id, Cycle, QMax, Info)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO Zellen (hash, id, Cycle, QMax, Info, Art, Datei)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE 
         Info = VALUES(Info)
         """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"])
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], dic["Datei"])
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -183,10 +242,10 @@ class Database:
         """
         sql = """
         UPDATE Zellen
-        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s
+        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s, Art = %s
         WHERE hash = %s
         """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], hash)
+        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], hash)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -225,6 +284,22 @@ class Database:
 
         zellen = self.query(sql, params=params)
         return zellen
+
+    def get_all_niquist(self):
+        sql = "SELECT * FROM Niquist"
+        return self.query(sql)
+
+    def get_all_dva(self):
+        sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
+        return self.query(sql)
+
+    def get_dva(self, Datei):
+        params = (Datei,)
+        sql = "SELECT * FROM DVA WHERE Datei = %s"
+        data = self.query(sql, params=params)
+        sql = "SELECT * FROM DVA_Points WHERE Datei = %s"
+        points = self.query(sql, params=params)
+        return data, points
 
     def query(self, sql_query, params=None):
         """

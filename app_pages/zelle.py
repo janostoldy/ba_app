@@ -1,14 +1,15 @@
 import streamlit as st
 import hashlib
-
+from src.filtern import zellen_filter
 from streamlit import session_state
 
 
 def zelle_app():
     st.title("Zellen")
-    zellen_filter()
+    con1 = st.container(border=True)
+    zellen_filter(con1)
 
-    col1, col2 = st.columns(2)
+    col1, col2 = con1.columns(2)
     if col1.button("Daten oder Zelle hinzufügen", use_container_width= True, type="primary"):
         zellen_hinzufuegen()
     if col2.button("Daten bearbeiten", use_container_width= True, type="secondary"):
@@ -34,7 +35,8 @@ def zellen_hinzufuegen():
             "id": id,
             "Cycle": cycle,
             "QMax": qmax,
-            "Info": info
+            "Info": info,
+            "Art": "Manuell"
         }
         with st.spinner("Daten hinzufügen...", show_time=True):
             DB = st.session_state["DB"]
@@ -70,7 +72,8 @@ def zelle_edit():
             "id": id,
             "Cycle": cycle,
             "QMax": qmax,
-            "Info": info
+            "Info": info,
+            "Art": "Manuell bearbeitet"
         }
         with st.spinner("Daten Updaten...", show_time=True):
             e = DB.update_zell(dic, zelle["hash"])
@@ -84,28 +87,6 @@ def zelle_edit():
             e = DB.delete_zell(zelle["hash"])
         if e is None:
             st.success(f"Zelle {id} wurde erfolgreich gelöscht")
-            st.rerun()
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
 
-def zellen_filter():
-    DB = st.session_state["DB"]
-    con = st.container(border=True)
-    con.subheader("Zellen Filtern")
-    alle_zellen = DB.query("SELECT DISTINCT id FROM Zellen")
-    alle_cycle = DB.query("SELECT DISTINCT Cycle FROM Zellen")
-    col1, col2 = con.columns(2)
-
-    if "zelle_filter" not in st.session_state:
-        st.session_state["zelle_filter"] = {
-            "zellen_id": None,
-            "zellen_cycle": None
-        }
-
-    zellen_id = col1.selectbox("Zellen eingeben", alle_zellen,index=None,placeholder="Wähle eine Zelle aus")
-    zelle_cycle = col2.selectbox("Zelle Cycle", alle_cycle,index=None,placeholder="Wähle ein Zyklus aus")
-
-    st.session_state["zelle_filter"] = {
-        "zellen_id": zellen_id,
-        "zellen_cycle": zelle_cycle
-    }
