@@ -3,6 +3,9 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
+from app_pages import zelle
+
+
 class Database:
     def __init__(self, db_name="Formierung"):
         load_dotenv()
@@ -16,7 +19,7 @@ class Database:
 
     def create_table(self):
         self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Datapoints (
+            CREATE TABLE IF NOT EXISTS EIS (
                 hash VARCHAR(255) PRIMARY KEY,
                 QAh INT,
                 SOC INT,
@@ -76,6 +79,33 @@ class Database:
                 Zelle VARCHAR(255)
             )
         """)
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS DVA (              
+                Datei VARCHAR(255),
+´               TemperatureC DOUBLE,
+                QchargemAh DOUBLE,
+                CapacitymAh DOUBLE,
+                QQomAh DOUBLE,
+                EnergyWh DOUBLE,
+                ImA DOUBLE,
+                times DOUBLE,
+                EcellV DOUBLE,
+                QQomAh_smoove DOUBLE,
+                EcellV_smoove DOUBLE,
+                calc_dV_dQ DOUBLE,
+                PRIMARY KEY (Datei, times)
+            );
+        """)
+        self.cur.execute("""
+             CREATE TABLE IF NOT EXISTS DVA_Points (
+                 Datei         VARCHAR(255),
+                 Point         VARCHAR(10),
+                 Value         DOUBLE,
+                 X_Start       DOUBLE,
+                 X_END         DOUBLE,
+                 PRIMARY KEY (Datei, Point)
+             );
+             """)
         self.conn.commit()
 
     def df_in_DB(self, df, table_name):
@@ -98,11 +128,7 @@ class Database:
         if df.empty:
             return
 
-        # Stelle sicher, dass 'hash' vorhanden ist (Pflicht für UPSERT)
-        if 'hash' not in df.columns:
-            raise ValueError("DataFrame muss eine 'hash'-Spalte enthalten.")
-
-        # SQLite UPSERT-Vorbereitung
+        # SQL UPSERT-Vorbereitung
         columns = df.columns.tolist()
         placeholders = ", ".join(["%s"] * len(columns))
         update_clause = ", ".join([f"{col}=VALUES({col})" for col in columns if col != 'hash'])
@@ -121,14 +147,14 @@ class Database:
         self.cur.executemany(sql, daten)
         self.conn.commit()
 
-    def insert_file(self, file, cycle, Info="", Zelle=""):
+    def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
         sql = """
-            INSERT INTO Files (name, Datum, Info, Cycle, Zelle)
-            VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)
+            INSERT INTO Files (name, Datum, Info, Cycle, Zelle, Typ)
+            VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
-            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle)
+            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle), Typ = VALUES(Typ)
         """
-        values = (file, Info, cycle, Zelle)
+        values = (file, Info, cycle, Zelle, Typ)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -137,9 +163,9 @@ class Database:
             return e
 
     def delete_file(self, file):
-        tables = ["Datapoints", "Files", "Zellen", "Niquist"]
+        tables = ["EIS", "Files", "Zellen", "Niquist", "DVA", "DVA_Points"]
         for table in tables:
-            if table == "Datapoints":
+            if table == "EIS":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
                 self.cur.execute(sql, (file,))
             elif table == "Files":
@@ -151,18 +177,35 @@ class Database:
             elif table == "Niquist":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
                 self.cur.execute(sql, (file,))
+            elif table == "DVA":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
+            elif table == "DVA_Points":
+                sql = f"DELETE FROM {table} WHERE Datei=%s"
+                self.cur.execute(sql, (file,))
         self.conn.commit()
 
     def get_all_files(self):
         return self.query("SELECT * FROM Files")
 
-    def get_file(self, cycle, zelle):
-        sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s """
-        values = (cycle, zelle)
+    def get_file(self, cycle, zelle, typ):
+        if typ == "*":
+            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s"""
+            values = (cycle, zelle)
+        else:
+            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s AND Typ=%s"""
+            values = (cycle, zelle, typ)
         return self.query(sql, values)
+
+    def get_file_typs(self):
+        sql = f"""SELECT DISTINCT Typ FROM Files """
+        return self.query(sql)
 
     def get_all_zells(self):
         return self.query("SELECT DISTINCT id FROM Zellen")
+
+    def get_all_cycles(self):
+        return self.query("SELECT DISTINCT Cycle FROM Zellen")
 
     def get_zell_cycle(self, zelle, Max=True):
         if Max:
@@ -245,6 +288,18 @@ class Database:
     def get_all_niquist(self):
         sql = "SELECT * FROM Niquist"
         return self.query(sql)
+
+    def get_all_dva(self):
+        sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
+        return self.query(sql)
+
+    def get_dva(self, Datei):
+        params = (Datei,)
+        sql = "SELECT * FROM DVA WHERE Datei = %s"
+        data = self.query(sql, params=params)
+        sql = "SELECT * FROM DVA_Points WHERE Datei = %s"
+        points = self.query(sql, params=params)
+        return data, points
 
     def query(self, sql_query, params=None):
         """

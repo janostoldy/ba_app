@@ -10,6 +10,7 @@ from app_pages.Points import Plot_Points
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.zelle import zelle_app
 from app_pages.analyse import analyse_app
+from app_pages.dva import dva_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -57,6 +58,7 @@ if st.session_state["authenticated"]:
     eis_page = st.Page(Plot_EIS, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
+    dva_page = st.Page(dva_app, title="DVA", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
         pg = st.navigation(
@@ -67,6 +69,7 @@ if st.session_state["authenticated"]:
                     eis_page,
                     deis_page,
                     points_page,
+                    dva_page,
                 ],
             }
         )
@@ -87,6 +90,7 @@ if st.session_state["authenticated"]:
                     eis_page,
                     deis_page,
                     points_page,
+                    dva_page,
                 ],
             }
         )

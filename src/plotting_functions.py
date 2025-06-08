@@ -62,3 +62,4 @@ def Get_Colors():
                 'marker_type': marker
             })
     return combination_line, combimation_dot
+

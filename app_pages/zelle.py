@@ -1,6 +1,6 @@
 import streamlit as st
 import hashlib
-
+from src.filtern import zellen_filter
 from streamlit import session_state
 
 
@@ -90,23 +90,3 @@ def zelle_edit():
         else:
             st.error(f"Fehler beim Ausführen der SQL-Anfrage: {e}")
 
-def zellen_filter(con):
-    DB = st.session_state["DB"]
-    con.subheader("Zellen Filtern")
-    alle_zellen = DB.query("SELECT DISTINCT id FROM Zellen")
-    alle_cycle = DB.query("SELECT DISTINCT Cycle FROM Zellen")
-    col1, col2 = con.columns(2)
-
-    if "zelle_filter" not in st.session_state:
-        st.session_state["zelle_filter"] = {
-            "zellen_id": None,
-            "zellen_cycle": None
-        }
-
-    zellen_id = col1.selectbox("Zellen eingeben", alle_zellen,index=None,placeholder="Wähle eine Zelle aus")
-    zelle_cycle = col2.selectbox("Zelle Cycle", alle_cycle,index=None,placeholder="Wähle ein Zyklus aus")
-
-    st.session_state["zelle_filter"] = {
-        "zellen_id": zellen_id,
-        "zellen_cycle": zelle_cycle
-    }

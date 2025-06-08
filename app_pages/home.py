@@ -17,7 +17,7 @@ def home_app():
 
     try:
         DB = st.session_state["DB"]
-        DB.query("SELECT * FROM Datapoints")
+        DB.query("SELECT * FROM Files")
     except Exception as e:
         con1 = st.container(border=True)
         st.subheader("Datenbank verbinden")

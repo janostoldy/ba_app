@@ -7,8 +7,8 @@ from src.plotting_functions import extract_sort_keys
 
 def Plot_EIS():
     DB = session_state["DB"]
-    all_cycles = DB.query("SELECT DISTINCT Cycle FROM Datapoints")
-    all_socs = DB.query("SELECT DISTINCT ROUND(QQomAh / 25.0) * 25 AS QQomAh FROM Datapoints")
+    all_cycles = DB.query("SELECT DISTINCT Cycle FROM EIS")
+    all_socs = DB.query("SELECT DISTINCT ROUND(QQomAh / 25.0) * 25 AS QQomAh FROM EIS")
 
     col1, col2 = st.columns(2)
     with col1:
