@@ -67,18 +67,6 @@ class Analyse:
                     continue
                 cycle = cycle + len(cycle_index)
                 qmax = max(df['QAh'])
-                hash_input = f"{Zelle}{cycle}{qmax}"
-                hash = hashlib.sha256(hash_input.encode()).hexdigest()
-                dic = {
-                    "hash": hash,
-                    "id": Zelle,
-                    "Cycle": cycle,
-                    "QMax": qmax,
-                    "Info": f"Automatisch erstellt nach analyse von {os.path.basename(data_name)}",
-                    "Art": "Auto_Ageing",
-                    "Datei": data_name
-                }
-                self.DB.insert_zell(dic)
                 self.DB.insert_file(data_name, cycle, f"{len(cycle_index)} Aeging Zyklen", Zelle, "DVA")
                 continue
 

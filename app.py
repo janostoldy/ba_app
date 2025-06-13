@@ -8,9 +8,10 @@ from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
 from app_pages.Points import Plot_Points
 from app_pages.db import add_data_app, edit_data_app
-from app_pages.zelle import zelle_app
+from app_pages.kapa import kapazität_app
 from app_pages.analyse import analyse_app
 from app_pages.dva import dva_app
+from app_pages.zellen import add_zelle_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -55,10 +56,11 @@ if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
     analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
+    kapa_page = st.Page(kapazität_app, title="Kapazität", icon="📈")
+    dva_page = st.Page(dva_app, title="DVA", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
-    dva_page = st.Page(dva_app, title="DVA", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
         pg = st.navigation(
@@ -66,31 +68,33 @@ if st.session_state["authenticated"]:
                 "Start": [home_page],
                 "Anwendungen": [
                     analyse_page,
+                    kapa_page,
+                    dva_page,
                     eis_page,
                     deis_page,
                     points_page,
-                    dva_page,
                 ],
             }
         )
     elif user.role == "admin":
         add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
         delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="📰")
-        zelle_page = st.Page(zelle_app, title="Zelle", icon="📰")
+        zelle_page = st.Page(add_zelle_app, title="Zellen", icon="📰")
         pg = st.navigation(
             {
                 "Start": [home_page],
                 "Daten": [
                     add_data_page,
                     delete_data_page,
-                    zelle_page
+                    zelle_page,
                 ],
                 "Anwendungen": [
                     analyse_page,
+                    kapa_page,
+                    dva_page,
                     eis_page,
                     deis_page,
                     points_page,
-                    dva_page,
                 ],
             }
         )

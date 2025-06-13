@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
-from app_pages import zelle
+from app_pages import kapa
 
 
 class Database:
@@ -60,7 +60,7 @@ class Database:
             )
         """)
         self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Zellen (
+            CREATE TABLE IF NOT EXISTS Kapa (
                 hash VARCHAR(255) PRIMARY KEY,
                 id VARCHAR(20),
                 Cycle INT,
@@ -104,6 +104,13 @@ class Database:
                  X_Start       DOUBLE,
                  X_END         DOUBLE,
                  PRIMARY KEY (Datei, Point)
+             );
+             """)
+        self.cur.execute("""
+             CREATE TABLE IF NOT EXISTS Zellen
+             (
+                 id   VARCHAR(20) PRIMARY KEY,
+                 Typ   VARCHAR(20)
              );
              """)
         self.conn.commit()
@@ -163,7 +170,7 @@ class Database:
             return e
 
     def delete_file(self, file):
-        tables = ["EIS", "Files", "Zellen", "Niquist", "DVA", "DVA_Points"]
+        tables = ["EIS", "Files", "Kapa", "Niquist", "DVA", "DVA_Points"]
         for table in tables:
             if table == "EIS":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
@@ -171,7 +178,7 @@ class Database:
             elif table == "Files":
                 sql = f"DELETE FROM {table} WHERE name=%s"
                 self.cur.execute(sql, (file,))
-            elif table == "Zellen":
+            elif table == "Kapa":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
                 self.cur.execute(sql, (file,))
             elif table == "Niquist":
@@ -204,66 +211,23 @@ class Database:
     def get_all_zells(self):
         return self.query("SELECT DISTINCT id FROM Zellen")
 
-    def get_all_cycles(self):
-        return self.query("SELECT DISTINCT Cycle FROM Zellen")
+    def get_kapa_cycles(self):
+        return self.query("SELECT DISTINCT Cycle FROM Files WHERE Typ='Kapa'")
 
     def get_zell_cycle(self, zelle, Max=True):
-        if Max:
-            return self.query("SELECT MAX(Cycle) FROM Zellen WHERE id = %s", (zelle,))
-        else:
-            return self.query("SELECT Cycle FROM Zellen WHERE id = %s", (zelle,))
+        return self.query("SELECT Cycle FROM Zellen WHERE id = %s", (zelle,))
 
-    def insert_zell(self, dic):
-        """
-            Füge eine Dataframe zu der Tabelle Zellen hinzu
-
-            :param dic: Die zu hinzufügenden Daten als Dictonary.
-        """
-        sql = """
-        INSERT INTO Zellen (hash, id, Cycle, QMax, Info, Art, Datei)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE 
-        Info = VALUES(Info)
-        """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], dic["Datei"])
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
-
-    def update_zell(self, dic, hash):
-        """
-            Update die Werte einer Zelle in der Tabelle Zellen.
-
-            :param dic: Die zu hinzufügenden Daten als Dictonary.
-            :param hash: Hash Wert der Zelle, die geupdated wird.
-        """
-        sql = """
-        UPDATE Zellen
-        SET hash = %s, id = %s, Cycle = %s, QMax = %s, Info = %s, Art = %s
-        WHERE hash = %s
-        """
-        values = (dic["hash"], dic["id"], dic["Cycle"], dic["QMax"], dic["Info"], dic["Art"], hash)
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
-
-    def delete_zell(self, hash):
+    def delete_zell(self, id):
         """
             Lösche eine Zelle aus der Tabelle Zellen.
 
             :param hash: Hash Wert der Zelle, die geupdated wird.
         """
         sql = """
-        DELETE FROM Zellen
-        WHERE hash = %s
+        DELETE FROM Zelle
+        WHERE id = %s
         """
-        values = (hash,)
+        values = (id,)
         try:
             self.cur.execute(sql, values)
             self.conn.commit()
@@ -271,8 +235,8 @@ class Database:
         except Exception as e:
             return e
 
-    def get_zellen(self, zellen_id,zellen_cycle):
-        sql = "SELECT * FROM Zellen WHERE 1=1"
+    def get_kapa(self, zellen_id,zellen_cycle):
+        sql = "SELECT * FROM Kapa WHERE 1=1"
         params = []
         if zellen_id is not None:
             sql += " AND id = %s"
@@ -291,6 +255,10 @@ class Database:
 
     def get_all_dva(self):
         sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
+        return self.query(sql)
+
+    def get_all_kapa(self):
+        sql = "SELECT * FROM Files WHERE Typ = 'Kapa'"
         return self.query(sql)
 
     def get_dva(self, Datei):

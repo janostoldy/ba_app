@@ -17,7 +17,7 @@ def add_data_app():
     folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
     alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen)
-    typs = ["EIS/Ageing-Analyse","DVA-Analyse"]
+    typs = ["EIS/Ageing-Analyse","DVA-Analyse","Kapazitäts-Messung"]
     typ = con2.selectbox("Analyse Art",typs)
     last_cycle = DB.get_zell_cycle(zelle)
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1

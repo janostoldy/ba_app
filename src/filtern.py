@@ -1,26 +1,17 @@
 import streamlit as st
 import pandas as pd
 
-def zellen_filter(con):
+def kapa_filter(con):
     DB = st.session_state["DB"]
     con.subheader("Filtern")
     alle_zellen = DB.get_all_zells()
-    alle_cycle = DB.get_all_cycles()
+    alle_cycle = DB.get_kapa_cycles()
     col1, col2 = con.columns(2)
 
-    if "zelle_filter" not in st.session_state:
-        st.session_state["zelle_filter"] = {
-            "zellen_id": None,
-            "zellen_cycle": None
-        }
+    zellen_id = col1.multiselect("Zellen eingeben", alle_zellen,placeholder="Wähle eine Zelle aus")
+    zelle_cycle = col2.multiselect("Zelle Cycle", alle_cycle,placeholder="Wähle ein Zyklus aus")
 
-    zellen_id = col1.selectbox("Zellen eingeben", alle_zellen,index=None,placeholder="Wähle eine Zelle aus")
-    zelle_cycle = col2.selectbox("Zelle Cycle", alle_cycle,index=None,placeholder="Wähle ein Zyklus aus")
-
-    st.session_state["zelle_filter"] = {
-        "zellen_id": zellen_id,
-        "zellen_cycle": zelle_cycle
-    }
+    return zellen_id, zelle_cycle
 
 def daten_filer(con,data):
     con.subheader("Filter")
