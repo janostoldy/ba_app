@@ -33,7 +33,7 @@ def points_app():
         con1.subheader("Plots:")
 
         key = 0
-        col1, col2 = st.columns(2)
+        col1, col2 = con1.columns(2)
         options = ["SoC", "Zelle"]
         selected = col1.segmented_control("Subplots",options,help="Wähle Wert aus der in einem Diagramm angezeigt wird",default=options[1])
         if selected == "SoC":
@@ -55,7 +55,7 @@ def points_app():
             con2.divider()
             data_mod = data[data[plot_name] == p]
             name = f"{plot_name} {p} {einheit}"
-            fig = plot_kapa(data_mod, name, y_values,subplots)
+            fig = plot_points(data_mod, name, y_values,subplots)
             con2.plotly_chart(fig)
             fig.update_layout(
                 template="plotly",  # <- wichtig!
@@ -91,13 +91,11 @@ def points_app():
             )
             key += 1
 
-            con2.dataframe(data)
+            con2.dataframe(data_mod)
 
 
 
-
-
-def plot_kapa(data, name, y_values, subplots):
+def plot_points(data, name, y_values, subplots):
     fig = px.line(data,
                   x="Cycle",
                   y=y_values,
