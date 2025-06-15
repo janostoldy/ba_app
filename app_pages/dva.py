@@ -60,7 +60,8 @@ def dva_app():
                     data=svg_data,
                     file_name="plot.svg",
                     mime="image/svg+xml",
-                    key = key
+                    key = key,
+                    use_container_width = True
                 )
                 key += 1
 

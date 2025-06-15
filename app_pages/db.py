@@ -11,13 +11,15 @@ def add_data_app():
     st.title("Daten hinzufügen")
     DB = st.session_state["DB"]
     DA = Analyse(DB)
-
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
-    folder = con2.text_input("Daten-Ordner eingeben", value="/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/02_EIS/02_BioLogic/Sony US18650VTC5A/Charakterisierung/U_VTC5A_007", placeholder="/Data")
+    folder = con2.text_input("Daten-Ordner eingeben",
+                             value=st.session_state.get("folder","/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/BA_Toldy/Charakterisierung"),
+                             placeholder="/Data")
+    st.session_state["folder"] = folder
     alle_zellen = DB.get_all_zells()
-    zelle = con2.selectbox("Zellen eingeben", alle_zellen)
-    typs = ["EIS/Ageing-Analyse","DVA-Analyse","Kapazitäts-Messung"]
+    zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"])
+    typs = ["Eingangsprüfung", "EIS-Analyse","DVA-Analyse","Kapazitäts-Messung"]
     typ = con2.selectbox("Analyse Art",typs)
     last_cycle = DB.get_zell_cycle(zelle)
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
@@ -37,7 +39,7 @@ def add_data_app():
         except Exception as e:
             con2.error(f"Fehler beim Abrufen der Dateien im Ordner: {e}")
             mpr_files = None
-        if mpr_files is not None:
+        if mpr_files is not None and len(mpr_files) > 0:
             # DF mit allen Dateien und Status und gefilterten Dateien
             gespeicherte_dateien = datei_liste['name'].values
             import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in mpr_files])
@@ -71,16 +73,37 @@ def add_data_app():
                 try:
                     file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
                     with st.spinner("Analysieren...",show_time=True):
-                        if typ == "EIS/Ageing-Analyse":
+                        if typ == "EIS-Analyse":
                             DA.analyze_EIS_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                         elif typ == "DVA-Analyse":
                             DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                        elif typ == "Kapazitäts-Messung":
+                            DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                        elif typ == "Eingangsprüfung":
+                            DA.analyse_eingang(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                         con2.success("Daten erfolgreich in Datenbank gespeichert.")
                         st.rerun()
                 except Exception as e:
-                    con2.error(f"Fehler bei {typ}: {e}")
+                    con2.error(f"Fehler bei {typ} -> {e}")
         else:
-            con2.error("Keine .mpr-Dateien im angegebenen Ordner gefunden.")
+            con2.warning("Keine Datein im Ordner gefunden.")
+            # Liste der Unterordner im angegebenen Ordner anzeigen
+            try:
+                con1 = st.container(border=False)
+                ordner_liste = [d for d in os.listdir(folder) if os.path.isdir(os.path.join(folder, d))]
+                if ordner_liste:
+                    con1.subheader("Gefundene Unterordner:")
+                    for n, ordner in enumerate(ordner_liste):
+                        space, col1, col2 = con1.columns([1, 1, 20])
+                        col1.write(n)
+                        if col2.button(f"📁 {ordner}", key=f"ordner_{ordner}", type="tertiary",
+                                       help=f"Ordner {ordner} öffnen"):
+                            st.session_state["folder"] = os.path.join(folder, ordner)
+
+                else:
+                    con2.warning("Keine Unterordner im angegebenen Ordner gefunden.")
+            except Exception as e:
+                st.error(f"Fehler beim Auflisten der Unterordner: {e}")
 
     if 'datei_liste' in locals():
         #df.columns = ['Datei', 'Zyklus', 'Zelle']

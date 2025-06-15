@@ -16,14 +16,23 @@ def kapa_filter(con):
 def daten_filer(con,data):
     con.subheader("Filter")
     alle_zellen = data["Zelle"].unique()
-    zelle = con.multiselect("Zellen eingeben", alle_zellen)
+    zelle_sel = con.multiselect(
+        "Zellen eingeben",
+        alle_zellen,
+        placeholder="Alle Zellen ausgewählt"
+    )
     all_cycles = data["Cycle"].unique()
     all_cycles = pd.Series(all_cycles)
     all_cycles = all_cycles.sort_values().values
     cycle_sel = con.multiselect(
         "Zyklus auswählen?",
         all_cycles,
+        placeholder="Alle Zyklen ausgewählt"
     )
+    if not zelle_sel:
+        zelle = alle_zellen.flatten().tolist()
+    else:
+        zelle = zelle_sel
     if not cycle_sel:
         cycle = all_cycles.flatten().tolist()
     else:

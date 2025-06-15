@@ -11,12 +11,12 @@ from app_pages.db import add_data_app, edit_data_app
 from app_pages.kapa import kapazität_app
 from app_pages.analyse import analyse_app
 from app_pages.dva import dva_app
-from app_pages.zellen import add_zelle_app
+from app_pages.zellen import add_zelle_app, show_zelle_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
 
-st.set_page_config(layout="wide", page_icon=":battery:", page_title="Analyse-Tool")
+st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
 # Anmeldung
 if "authenticated" not in st.session_state:
@@ -63,11 +63,13 @@ if st.session_state["authenticated"]:
     points_page = st.Page(Plot_Points, title="Points", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
+        zellen_page = st.Page(show_zelle_app, title="Zellen", icon="🔋")
         pg = st.navigation(
             {
                 "Start": [home_page],
                 "Anwendungen": [
                     analyse_page,
+                    zellen_page,
                     kapa_page,
                     dva_page,
                     eis_page,
@@ -79,7 +81,7 @@ if st.session_state["authenticated"]:
     elif user.role == "admin":
         add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
         delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="📰")
-        zelle_page = st.Page(add_zelle_app, title="Zellen", icon="📰")
+        zelle_page = st.Page(add_zelle_app, title="Zellen hinzufügen", icon="📰")
         pg = st.navigation(
             {
                 "Start": [home_page],

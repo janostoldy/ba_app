@@ -61,13 +61,9 @@ class Database:
         """)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Kapa (
-                hash VARCHAR(255) PRIMARY KEY,
-                id VARCHAR(20),
-                Cycle INT,
                 QMax REAL,
                 Info VARCHAR(255),
-                Art VARCHAR(20),
-                Datei VARCHAR(255)
+                Datei VARCHAR(255) PRIMARY KEY
             )
         """)
         self.cur.execute("""
@@ -110,7 +106,9 @@ class Database:
              CREATE TABLE IF NOT EXISTS Zellen
              (
                  id   VARCHAR(20) PRIMARY KEY,
-                 Typ   VARCHAR(20)
+                 Typ   VARCHAR(20),
+                 Cycle INT,
+                 Info VARCHAR(255)
              );
              """)
         self.conn.commit()
@@ -209,7 +207,7 @@ class Database:
         return self.query(sql)
 
     def get_all_zells(self):
-        return self.query("SELECT DISTINCT id FROM Zellen")
+        return self.query("SELECT * FROM Zellen")
 
     def get_kapa_cycles(self):
         return self.query("SELECT DISTINCT Cycle FROM Files WHERE Typ='Kapa'")
@@ -235,19 +233,16 @@ class Database:
         except Exception as e:
             return e
 
-    def get_kapa(self, zellen_id,zellen_cycle):
-        sql = "SELECT * FROM Kapa WHERE 1=1"
-        params = []
-        if zellen_id is not None:
-            sql += " AND id = %s"
-            params.append(zellen_id)
+    def get_all_kapa(self):
+        sql = "SELECT * FROM Files WHERE Typ = 'Kapa'"
+        return self.query(sql)
 
-        if zellen_cycle is not None:
-            sql += " AND Cycle = %s"
-            params.append(zellen_cycle)
-
-        zellen = self.query(sql, params=params)
-        return zellen
+    def get_kapa(self, Datei):
+        sql = """SELECT Kapa.Datei, Kapa.Kapa, Kapa.Info, Files.Datum, Files.Cycle, Files.Zelle 
+                 FROM Kapa INNER JOIN Files ON Kapa.Datei=Files.name 
+                 WHERE Datei=%s"""
+        params = (Datei,)
+        return self.query(sql, params=params)
 
     def get_all_niquist(self):
         sql = "SELECT * FROM Niquist"
@@ -255,10 +250,6 @@ class Database:
 
     def get_all_dva(self):
         sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
-        return self.query(sql)
-
-    def get_all_kapa(self):
-        sql = "SELECT * FROM Files WHERE Typ = 'Kapa'"
         return self.query(sql)
 
     def get_dva(self, Datei):

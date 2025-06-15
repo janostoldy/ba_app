@@ -12,6 +12,18 @@ class Analyse:
         # Initialisiere die Datenbankverbindung
         self.DB = datenbank
 
+    def analyse_eingang(self, file_path, cycle, Zelle, save_data):
+        for data_path in file_path:
+            data_name = os.path.basename(data_path)
+            data_path = [data_path]
+            if "01_MB" in data_name:
+                self.analys_kapa_data(data_path, cycle, Zelle, save_data)
+            elif "02_MB" in data_name:
+                self.analys_OCV_data(data_path, cycle, Zelle, save_data)
+            elif "03_MB" in data_name:
+                self.analyze_EIS_data(data_path, cycle, Zelle, save_data)
+
+
     def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
         # Erstelle einen Hash-Wert für die Zeile
         hash_input = f"{Messung}{freqHz}{cycle}{soc}{ima}{zelle}"
@@ -48,62 +60,58 @@ class Analyse:
             self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
 
     def analyze_EIS_data(self, file_path, cycle, Zelle, save_data):
-        for data_path in file_path:
-            #print('Processing: ' + os.path.basename(data_name))
-            data_name = os.path.basename(data_path)
-            mpr_file = BioLogic.MPRfile(data_path)
-            df = pd.DataFrame(mpr_file.data)
-            df = df.rename(columns=mes_spalten)
+        try:
+            for data_path in file_path:
+                data_name = os.path.basename(data_path)
+                mpr_file = BioLogic.MPRfile(data_path)
+                df = pd.DataFrame(mpr_file.data)
+                df = df.rename(columns=mes_spalten)
 
-            if 'ZOhm' not in df.columns:
-                cycle_index = df[((df['flags'] == 55) | (df['flags'] == 183))]
-                if len(cycle_index) == 0:
-                    cycle_index = df[((df['flags'] == 33)| (df['flags'] == 51))]
-                    if len(cycle_index) != 1:
-                        cycle_index = df[((df['flags'] == 39) | (df['flags'] == 167))]
+                if 'ZOhm' not in df.columns:
+                    raise Exception("Keine Eis-Daten")
 
-                if len(cycle_index) == 0:
-                    self.DB.insert_file(data_name, cycle, f"Ruhe Zyklen oder falsche Flaggen",Zelle, "Rest")
-                    continue
-                cycle = cycle + len(cycle_index)
-                qmax = max(df['QAh'])
-                self.DB.insert_file(data_name, cycle, f"{len(cycle_index)} Aeging Zyklen", Zelle, "DVA")
-                continue
+                # Eis Messung
+                start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
+                end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
+                if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
+                    start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqHz'] > 0)].index
+                    end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqHz'] > 0)].index
+                if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
+                    raise Exception('No EIS data found in file or wrong flags.')
 
-            # Eis Messung
-            start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqHz'] > 0)].index
-            end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqHz'] > 0)].index
-            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
-                start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqHz'] > 0)].index
-                end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqHz'] > 0)].index
-            if len(start_eis_indices) == 0 | len(end_eis_indices) == 0:
-                raise Exception('No EIS data found in file or wrong flags.')
+                eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
+                eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
+                eis_ImA = df.ImA[start_eis_indices - 1]
+                eis_Calc_ImA = round(eis_ImA / 1250) * 1250
+                start_time = df.times[start_eis_indices]
 
-            eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
-            eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
-            eis_ImA = df.ImA[start_eis_indices - 1]
-            eis_Calc_ImA = round(eis_ImA / 1250) * 1250
-            start_time = df.times[start_eis_indices]
+                for i, eis in enumerate(eis_values):
+                    # Real und Imaginärteil berechnen
+                    eis_phi = np.deg2rad(eis['PhaseZdeg'])
+                    eis.loc[:, 'calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
+                    eis.loc[:, 'calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values) * -1
 
-            for i, eis in enumerate(eis_values):
-                # Real und Imaginärteil berechnen
-                eis_phi = np.deg2rad(eis['PhaseZdeg'])
-                eis.loc[:,'calc_ReZOhm'] = eis['ZOhm'] * np.cos(eis_phi.values)
-                eis.loc[:,'calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values) *-1
+                    eis_hashes = [self.create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i], Zelle) for freq in eis['freqHz']]
+                    eis.loc[:, 'SOC'] = eis_soc.iloc[i]
+                    eis.loc[:, 'Calc_ImA'] = eis_Calc_ImA.iloc[i]
+                    eis.loc[:, 'Cycle'] = cycle
+                    eis.loc[:, 'Zelle'] = Zelle
+                    eis.loc[:, 'calc_times'] = eis['times'] - start_time.iloc[i]
+                    eis.loc[:, 'hash'] = eis_hashes
+                    eis.loc[:, 'Typ'] = 'Eis'
+                    eis.loc[:, 'Datei'] = os.path.basename(data_name)
 
-                eis_hashes = [self.create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i], Zelle) for freq in eis['freqHz']]
-                eis.loc[:,'SOC'] = eis_soc.iloc[i]
-                eis.loc[:,'Calc_ImA'] = eis_Calc_ImA.iloc[i]
-                eis.loc[:,'Cycle'] = cycle
-                eis.loc[:,'Zelle'] = Zelle
-                eis.loc[:,'calc_times'] = eis['times'] - start_time.iloc[i]
-                eis.loc[:,'hash'] = eis_hashes
-                eis.loc[:,'Typ'] = 'Eis'
-                eis.loc[:,'Datei'] = os.path.basename(data_name)
-            self.calc_niquist_data(eis_values,save_data)
+                self.calc_niquist_data(eis_values, save_data)
+                if save_data:
+                    self.DB.insert_file(data_name, cycle, "Eis Messung", Zelle, "EIS")
+                    for eis in eis_values:
+                        self.DB.df_in_DB(df=eis, table_name='EIS')
 
+        except Exception as e:
+            raise Exception(f"Fehler bei EIS-Analyse -> {e}")
 
-            # Deis Messung
+    def analyze_DEIS_data(self, df, data_name, cycle, Zelle, save_data, eis_values):
+        try:
             deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqHz'] > 0)].copy()
             if len(deis_values) == 0:
                 deis_values = df[((df['flags'] == 101) | (df['flags'] == 229)) & (df['freqHz'] > 0)].copy()
@@ -122,65 +130,93 @@ class Analyse:
 
             # Real und Imaginärteil berechnen
             deis_phi = np.deg2rad(deis_values['PhaseZdeg'])  # Konvertiere Winkel in Radiant
-            deis_values.loc[:,'calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
-            deis_values.loc[:,'calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
+            deis_values.loc[:, 'calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
+            deis_values.loc[:, 'calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
 
-            deis_values.loc[:,'SOC'] = deis_soc
-            deis_values.loc[:,'Calc_ImA'] = deis_Calc_ImA
-            deis_values.loc[:,'Cycle'] = cycle
-            deis_values.loc[:,'Zelle'] = Zelle
-            deis_values.loc[:,'calc_times'] = 0
-            deis_values.loc[:,'hash'] = deis_hashes
-            deis_values.loc[:,'Typ'] = 'Deis'
+            deis_values.loc[:, 'SOC'] = deis_soc
+            deis_values.loc[:, 'Calc_ImA'] = deis_Calc_ImA
+            deis_values.loc[:, 'Cycle'] = cycle
+            deis_values.loc[:, 'Zelle'] = Zelle
+            deis_values.loc[:, 'calc_times'] = 0
+            deis_values.loc[:, 'hash'] = deis_hashes
+            deis_values.loc[:, 'Typ'] = 'Deis'
             deis_values.loc[:, 'Datei'] = os.path.basename(data_name)
 
             if save_data:
-                self.insert_data(eis_values, deis_values, data_name)
-                self.DB.insert_file(data_name, cycle, "Eis Messung", Zelle, "EIS")
+                self.DB.df_in_DB(df=deis_values, table_name='EIS')
+        except Exception as e:
+            raise Exception(f"Fehler bei DEIS-Analyse -> {e}")
+
+    def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
+        try:
+            for data_path in file_path:
+                data_name = os.path.basename(data_path)
+                mpr_file = BioLogic.MPRfile(data_path)
+                df = pd.DataFrame(mpr_file.data)
+                kapa_raw = df.rename(columns=mes_spalten)
+                kapa = max(kapa_raw['QQomAh']) - min(kapa_raw['QQomAh'])
+
+                data = pd.DataFrame({
+                    'Datei': [data_name],
+                    'Info': [f"Zelle {Zelle} nach Zyklus {cycle}"],
+                    'Kapa': [kapa],
+                })
+
+                if save_data:
+                    self.DB.df_in_DB(df=data, table_name='Kapa')
+                    self.DB.insert_file(data_name, cycle, "Kapazitäts-Analyse", Zelle, "Kapa")
+        except Exception as e:
+            raise Exception(f"Fehler bei Kapazitäts-Analyse -> {e}")
 
     def analys_OCV_data(self, file_path, cycle, Zelle, save_data):
-        for data_path in file_path:
-            data_name = os.path.basename(data_path)
-            mpr_file = BioLogic.MPRfile(data_path)
-            df = pd.DataFrame(mpr_file.data)
-            dva_raw = df.rename(columns=mes_spalten)
+        try:
+            for data_path in file_path:
+                data_name = os.path.basename(data_path)
+                mpr_file = BioLogic.MPRfile(data_path)
+                df = pd.DataFrame(mpr_file.data)
+                dva_raw = df.rename(columns=mes_spalten)
 
-            QQomAh_smoove = gaussian_filter1d(dva_raw["QQomAh"], sigma=5)
-            QQomAh_diff = np.gradient(QQomAh_smoove)
-            Ecell_smoove = gaussian_filter1d(dva_raw["EcellV"], sigma=5)
-            Ecell_diff = np.gradient(Ecell_smoove)
-            dva = Ecell_diff[:] / QQomAh_diff[:]
-            dva_smoove = gaussian_filter1d(dva, sigma=15)
-            last_value = dva_smoove[-1] * 1.2
-            first_index = np.where(np.isclose(dva_smoove, last_value, atol=1e-5))[0][0]
+                QQomAh_smoove = gaussian_filter1d(dva_raw["QQomAh"], sigma=5)
+                QQomAh_diff = np.gradient(QQomAh_smoove)
+                Ecell_smoove = gaussian_filter1d(dva_raw["EcellV"], sigma=5)
+                Ecell_diff = np.gradient(Ecell_smoove)
+                dva = Ecell_diff[:] / QQomAh_diff[:]
+                dva_smoove = gaussian_filter1d(dva, sigma=15)
+                dva_ind = np.where(dva_smoove < 0.001)
+                first_index = dva_ind[0][0]
+                dva_ind = np.where(np.diff(dva_smoove) > 0)[0]
+                last_index = dva_ind[-1] + 1 if len(dva_ind) > 0 else len(dva_smoove) - 1
 
-            dva_edit = dva_raw[first_index:]
-            dva_edit['QQomAh_smoove'] = QQomAh_smoove[first_index:]
-            dva_edit['EcellV_smoove'] = Ecell_smoove[first_index:]
-            dva_edit['calc_dV_dQ'] = dva_smoove[first_index:]
-            dva_edit['cycle'] = cycle
-            dva_edit['Zelle'] = Zelle
-            dva_edit['Datei'] = data_name
+                dva_edit = dva_raw[first_index:last_index]
+                dva_edit['QQomAh_smoove'] = QQomAh_smoove[first_index:last_index]
+                dva_edit['EcellV_smoove'] = Ecell_smoove[first_index:last_index]
+                dva_edit['calc_dV_dQ'] = dva_smoove[first_index:last_index]
+                dva_edit['cycle'] = cycle
+                dva_edit['Zelle'] = Zelle
+                dva_edit['Datei'] = data_name
 
-            Q0 = dva_edit['QQomAh_smoove'].iloc[0]
-            Qactual = dva_edit['QQomAh_smoove'].iloc[-1]
-            peaks = find_peaks(dva_edit['calc_dV_dQ'].values, distance=500, height=0.00035)[0]
-            Q1 = dva_edit['QQomAh_smoove'].iloc[peaks[3]]
-            Q2 = Qactual - Q1
-            Q3 = Qactual - dva_edit['QQomAh_smoove'].iloc[peaks[4]]
+                Q0_val = QQomAh_smoove[0]
+                Q0 = dva_edit['QQomAh_smoove'].iloc[0]
+                Qactual = dva_edit['QQomAh_smoove'].iloc[-1]
+                peaks = find_peaks(dva_edit['calc_dV_dQ'].values, distance=500, height=0.00035)[0]
+                Q1 = dva_edit['QQomAh_smoove'].iloc[peaks[2]]
+                Q2 = Qactual - Q1
+                Q3 = Qactual - dva_edit['QQomAh_smoove'].iloc[peaks[3]]
 
-            calc_Points = pd.DataFrame({
-                'Datei': [data_name] * 5,
-                'Point': ['Q0', 'Q1', 'Q2', 'Q3', 'Qactual'],
-                'Value': [Q0, Q1, Q2, Q3, Qactual],
-                'X_Start': [Q0, Q0, Qactual - Q2, Qactual - Q3, Q0],
-                'X_End': [Q0, Q1, Qactual, Qactual, Qactual],
-            })
+                calc_Points = pd.DataFrame({
+                    'Datei': [data_name] * 5,
+                    'Point': ['Q0', 'Q1', 'Q2', 'Q3', 'Qactual'],
+                    'Value': [Q0_val, Q1, Q2, Q3, Qactual],
+                    'X_Start': [Q0, Q0, Qactual - Q2, Qactual - Q3, Q0],
+                    'X_End': [Q0, Q1, Qactual, Qactual, Qactual],
+                })
 
-            if save_data:
-                self.DB.df_in_DB(df=dva_edit, table_name='DVA')
-                self.DB.df_in_DB(df=calc_Points, table_name='DVA_Points')
-                self.DB.insert_file(data_name, cycle, "DVA Analyse", Zelle, "DVA")
+                if save_data:
+                    self.DB.df_in_DB(df=dva_edit, table_name='DVA')
+                    self.DB.df_in_DB(df=calc_Points, table_name='DVA_Points')
+                    self.DB.insert_file(data_name, cycle, "DVA Analyse", Zelle, "DVA")
+        except Exception as e:
+            raise Exception(f"Fehler bei OCV-Analyse -> {e}")
 
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:
