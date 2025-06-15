@@ -14,7 +14,7 @@ colors = {
         'TUM:Extended:Red': '#c4071b'  # Rot
     }
 
-def extract_sort_keys(name):  #TODO: Muss geändert werden
+def extract_sort_keys(name):
     # Suche nach den relevanten Zahlen
     cycle_match = re.search(r'Cycle_(\d+)', name)
     qcell_match = re.search(r'Qcell_(\d+)', name)
