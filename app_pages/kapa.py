@@ -3,8 +3,9 @@ import streamlit as st
 import pandas as pd
 import io
 from src.filtern import daten_filer
+from src.plotting_functions import colors
 
-def kapazität_app():
+def kapazitaet_app():
     st.title("Kapazität")
     DB = st.session_state["DB"]
     alldata = DB.get_all_kapa()
@@ -15,17 +16,39 @@ def kapazität_app():
         st.warning("Keine Werte ausgewählt")
     else:
         con1 = st.container(border=False)
-        key = 0
+        data = pd.DataFrame()
         for z in zelle:
-            con2 = st.container(border=False)
-            con2.divider()
-            data = pd.DataFrame()
             for c in cycle:
                 file = DB.get_file(c, z,"Kapa")
                 kap = DB.get_kapa(file["name"].values[0])
                 filt_data = pd.concat([filt_data, kap])
                 data = pd.concat([data, kap])
-            fig = plot_kapa(data,z)
+
+        con1.subheader("Ausgewählte Daten:")
+        con1.write(filt_data)
+        con1.subheader("Plots:")
+
+        selected = con1.toggle("Alle Grafen in einem Plot")
+        if selected :
+            plots = ["Allen Zellen"]
+            plot_name = ""
+            data_mod = data
+            subplots = "Zelle"
+            einheit = "mAh"
+        else:
+            plots = zelle
+            plot_name = "Zelle"
+            subplots = "Zelle"
+            einheit = "mAh"
+
+        key = 0
+        for p in plots:
+            con2 = st.container(border=False)
+            con2.divider()
+            if not selected:
+                data_mod = data[data[plot_name] == p]
+            name = f"Kapazität von {plot_name} {p} in {einheit}"
+            fig = plot_kapa(data_mod, name,subplots)
             con2.plotly_chart(fig)
             fig.update_layout(
                 template="plotly",  # <- wichtig!
@@ -57,21 +80,24 @@ def kapazität_app():
                 file_name="plot.svg",
                 mime="image/svg+xml",
                 key=key,
-                use_container_width = True
+                use_container_width=True
             )
             key += 1
 
-            con2.dataframe(data)
-
-        con1.subheader("Ausgewählte Daten:")
-        con1.write(filt_data)
-        con1.subheader("Plots:")
+            con2.dataframe(data_mod)
 
 
-def plot_kapa(data,name):
-    fig = px.scatter(data, x="Cycle", y="Kapa",title=f"Kapazität von Zelle {name}")
+def plot_kapa(data,name,subplots):
+    fig = px.line(data,
+                  x="Cycle",
+                  y="Kapa",
+                  color=subplots,
+                  title=name,
+                  markers=True,
+                  color_discrete_sequence=list(colors.values())
+                  )
     fig.update_layout(
-        yaxis_title='Kapazirät (Ah)',
+        yaxis_title='Kapazirät (mAh)',
         xaxis_title='Zyklken',
         template='simple_white'
     )
