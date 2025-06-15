@@ -41,10 +41,8 @@ class Analyse:
             maxima_indices, _ = find_peaks(s_im)
             maxima_indices = maxima_indices[0]
             temp = {
-                'hash': eis['hash'].values[0],
-                'QAh': eis['SOC'].values[0],
+                'SoC': eis['SoC'].values[0],
                 'Calc_ImA': eis['Calc_ImA'].values[0],
-                'Zyklus': eis['Cycle'].values[0],
                 'Im_Min': im.iloc[minima_indices],
                 'Re_Min': re.iloc[minima_indices],
                 'freq_Min': freq.iloc[minima_indices],
@@ -80,7 +78,8 @@ class Analyse:
                     raise Exception('No EIS data found in file or wrong flags.')
 
                 eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
-                eis_soc = round(df.QQomAh[start_eis_indices - 1] / 125) * 125
+                zero_soc = min(df.QQomAh)
+                eis_soc = round((df.QQomAh[start_eis_indices - 1] - zero_soc) / 125) * 125
                 eis_ImA = df.ImA[start_eis_indices - 1]
                 eis_Calc_ImA = round(eis_ImA / 1250) * 1250
                 start_time = df.times[start_eis_indices]
@@ -92,7 +91,7 @@ class Analyse:
                     eis.loc[:, 'calc_ImZOhm'] = eis['ZOhm'] * np.sin(eis_phi.values) * -1
 
                     eis_hashes = [self.create_hash('EIS', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i], Zelle) for freq in eis['freqHz']]
-                    eis.loc[:, 'SOC'] = eis_soc.iloc[i]
+                    eis.loc[:, 'SoC'] = eis_soc.iloc[i]
                     eis.loc[:, 'Calc_ImA'] = eis_Calc_ImA.iloc[i]
                     eis.loc[:, 'Cycle'] = cycle
                     eis.loc[:, 'Zelle'] = Zelle
@@ -133,7 +132,7 @@ class Analyse:
             deis_values.loc[:, 'calc_ReZOhm'] = deis_values['ZOhm'] * np.cos(deis_phi)
             deis_values.loc[:, 'calc_ImZOhm'] = deis_values['ZOhm'] * np.sin(deis_phi)
 
-            deis_values.loc[:, 'SOC'] = deis_soc
+            deis_values.loc[:, 'SoC'] = deis_soc
             deis_values.loc[:, 'Calc_ImA'] = deis_Calc_ImA
             deis_values.loc[:, 'Cycle'] = cycle
             deis_values.loc[:, 'Zelle'] = Zelle

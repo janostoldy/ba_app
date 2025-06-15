@@ -2,7 +2,7 @@ import plotly.express as px
 import streamlit as st
 import pandas as pd
 import io
-from src.filtern import kapa_filter, daten_filer
+from src.filtern import daten_filer
 
 def kapazität_app():
     st.title("Kapazität")

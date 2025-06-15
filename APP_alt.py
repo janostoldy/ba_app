@@ -3,8 +3,8 @@ import json
 import io
 from app_pages.eis import Plot_EIS
 from app_pages.DEIS import Plot_DEIS
-from app_pages.Points import Plot_Points
-from src.plotting_functions import Get_Colors, extract_colors_from_soc
+from app_pages.points import Plot_Points
+from src.plotting_functions import get_linestyles
 from Classes.datenanalyse import EIS_Analyse
 from Classes.datenbank import Database
 
@@ -108,7 +108,7 @@ if uploaded_files3:
     Plot_Data = json.load(uploaded_files3)
     convert_to_dataframes(Plot_Data)
 
-    combination_line, combimation_dot = Get_Colors()
+    combination_line, combimation_dot = get_linestyles()
 
     options = ['EIS', 'EIS_Points','DEIS']
     col1, col2, col3 = con3.columns([2,4,1])

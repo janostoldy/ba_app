@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-from src.filtern import daten_filer
+from src.filtern import daten_filer, typ_filer
 from src.plotting_df import highlight_status, status_func
 from Classes.datenanalyse import Analyse
 import os
@@ -152,11 +152,13 @@ def edit_data_app():
     con1 = st.container(border=True)
     data = (DB.get_all_files())
     cycle, zelle = daten_filer(con1,data)
+    typ = typ_filer(con1,data)
     data = pd.DataFrame()
     for zel in zelle:
         for cyc in cycle:
-            dat = DB.get_file(cyc, zel, typ="*")
-            data = pd.concat([data, dat], ignore_index=True)
+            for tp in typ:
+                dat = DB.get_file(cyc, zel, tp)
+                data = pd.concat([data, dat], ignore_index=True)
 
     st.session_state.filter_files = data
 

@@ -1,6 +1,19 @@
 import re
 import xml.etree.ElementTree as ET
 
+colors = {
+        'TUM:Extended:Violet': '#69085a',  # Violett
+        'TUM:Extended:Navy': '#0f1a5f',  # Dunkelblau / Indigo
+        'TUM:Primary:Blue': '#0073cf',  # Blau
+        'TUM:Extended:Teal': '#00778a',  # Türkis / Cyan
+        'TUM:Extended:Forest': '#007c30',  # Grün
+        'TUM:Extended:Lime': '#679a1d',  # Gelbgrün
+        'TUM:Extended:Goldenrod': '#f9ba00',  # Dunkelgelb
+        'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
+        'TUM:Extended:Maroon': '#9c0d16',  # Dunkelrot, noch unter Rot
+        'TUM:Extended:Red': '#c4071b'  # Rot
+    }
+
 def extract_sort_keys(name):  #TODO: Muss geändert werden
     # Suche nach den relevanten Zahlen
     cycle_match = re.search(r'Cycle_(\d+)', name)
@@ -14,36 +27,7 @@ def extract_sort_keys(name):  #TODO: Muss geändert werden
 
     return (cycle, qcell, ima)
 
-def extract_colors_from_soc(file_path):
-    colors = {}
-    # Namespace definieren
-    namespaces = {'draw': 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0'}
-
-    tree = ET.parse(file_path)
-    root = tree.getroot()
-
-    # Iteriere über alle `draw:color`-Elemente
-    for color in root.findall('.//draw:color', namespaces):
-        color_name = color.get('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}name')  # Vollständiger Namespace
-        color_value = color.get('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}color')  # Vollständiger Namespace
-        if color_name and color_value:
-            colors[color_name] = color_value
-
-    return colors
-
-def Get_Colors():
-    colors = {
-        'TUM:Extended:Violet': '#69085a',  # Violett
-        'TUM:Extended:Navy': '#0f1a5f',  # Dunkelblau / Indigo
-        'TUM:Primary:Blue': '#0073cf',  # Blau
-        'TUM:Extended:Teal': '#00778a',  # Türkis / Cyan
-        'TUM:Extended:Forest': '#007c30',  # Grün
-        'TUM:Extended:Lime': '#679a1d',  # Gelbgrün
-        'TUM:Extended:Goldenrod': '#f9ba00',  # Dunkelgelb
-        'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
-        'TUM:Extended:Maroon': '#9c0d16',  # Dunkelrot, noch unter Rot
-        'TUM:Extended:Red': '#c4071b'  # Rot
-    }
+def get_linestyles():
     color_list = list(colors.values())
     line_styles = ['solid', 'dash', 'dot', 'dashdot']
     dot_styles = ['circle', 'square', 'diamond', 'cross']

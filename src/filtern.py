@@ -38,3 +38,29 @@ def daten_filer(con,data):
     else:
         cycle = cycle_sel
     return cycle, zelle
+
+def typ_filer(con,data):
+    alle_typ = data["Typ"].unique()
+    typ_sel = con.multiselect(
+        "Typ",
+        alle_typ,
+        placeholder="Alle Typen ausgewählt"
+    )
+    if not typ_sel:
+        typ = alle_typ.flatten().tolist()
+    else:
+        typ = typ_sel
+    return typ
+
+def soc_filer(con,data):
+    alle_soc = data["SoC"].unique()
+    soc_sel = con.multiselect(
+        "SoC",
+        alle_soc,
+        placeholder="Alle Typen ausgewählt"
+    )
+    if not soc_sel:
+        typ = alle_soc.flatten().tolist()
+    else:
+        typ = soc_sel
+    return typ

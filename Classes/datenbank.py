@@ -45,17 +45,15 @@ class Database:
             )
         """)
         self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Niquist (
-                hash VARCHAR(255) PRIMARY KEY,
-                QAh INT,
+            CREATE TABLE IF NOT EXISTS EIS_Points (
+                SoC INT,
                 Calc_ImA INT,
-                Zyklus INT,
                 Im_Min REAL,
                 Re_Min REAL,
                 freq_Min REAL,
                 Im_Max REAL,
                 Re_Max REAL,
-                freq_Max REAL
+                freq_Max REAL,
                 Datei VARCHAR(255)
             )
         """)
@@ -168,7 +166,7 @@ class Database:
             return e
 
     def delete_file(self, file):
-        tables = ["EIS", "Files", "Kapa", "Niquist", "DVA", "DVA_Points"]
+        tables = ["EIS", "Files", "Kapa", "EIS_Points", "DVA", "DVA_Points"]
         for table in tables:
             if table == "EIS":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
@@ -179,7 +177,7 @@ class Database:
             elif table == "Kapa":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
                 self.cur.execute(sql, (file,))
-            elif table == "Niquist":
+            elif table == "EIS_Points":
                 sql = f"DELETE FROM {table} WHERE Datei=%s"
                 self.cur.execute(sql, (file,))
             elif table == "DVA":
@@ -244,10 +242,6 @@ class Database:
         params = (Datei,)
         return self.query(sql, params=params)
 
-    def get_all_niquist(self):
-        sql = "SELECT * FROM Niquist"
-        return self.query(sql)
-
     def get_all_dva(self):
         sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
         return self.query(sql)
@@ -263,6 +257,18 @@ class Database:
     def get_all_eis(self):
         sql = "SELECT * FROM Files WHERE Typ = 'EIS'"
         return self.query(sql)
+
+    def get_all_eis_soc(self):
+        sql = ("SELECT DISTINCT SoC FROM Eis_Points ")
+        return self.query(sql)
+
+    def get_eis_points(self, Datei, soc):
+        params = (Datei,soc)
+        sql = """SELECT EIS_Points.*, Files.Datum, Files.Cycle, Files.Zelle
+                 FROM EIS_Points INNER JOIN Files ON EIS_Points.Datei=Files.name 
+                 WHERE EIS_Points.Datei = %s AND EIS_Points.SoC = %s"""
+        return self.query(sql, params=params)
+
 
     def query(self, sql_query, params=None):
         """
