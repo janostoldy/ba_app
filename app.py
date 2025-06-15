@@ -8,10 +8,11 @@ from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
 from app_pages.points import points_app
 from app_pages.db import add_data_app, edit_data_app
-from app_pages.kapa import kapazität_app
+from app_pages.kapa import kapazitaet_app
 from app_pages.analyse import analyse_app
 from app_pages.dva import dva_app
 from app_pages.zellen import add_zelle_app, show_zelle_app
+from app_pages.eingang import eingang_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -56,7 +57,8 @@ if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
     analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
-    kapa_page = st.Page(kapazität_app, title="Kapazität", icon="📈")
+    eingang_page = st.Page(eingang_app, title="Eingang", icon="📥")
+    kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
@@ -70,6 +72,7 @@ if st.session_state["authenticated"]:
                 "Anwendungen": [
                     analyse_page,
                     zellen_page,
+                    eingang_page,
                     kapa_page,
                     dva_page,
                     eis_page,
@@ -92,6 +95,7 @@ if st.session_state["authenticated"]:
                 ],
                 "Anwendungen": [
                     analyse_page,
+                    eingang_page,
                     kapa_page,
                     dva_page,
                     eis_page,

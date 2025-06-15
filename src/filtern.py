@@ -13,14 +13,9 @@ def kapa_filter(con):
 
     return zellen_id, zelle_cycle
 
-def daten_filer(con,data):
+def daten_filter(con, data):
     con.subheader("Filter")
-    alle_zellen = data["Zelle"].unique()
-    zelle_sel = con.multiselect(
-        "Zellen eingeben",
-        alle_zellen,
-        placeholder="Alle Zellen ausgewählt"
-    )
+    zelle = zellen_filter(con, data)
     all_cycles = data["Cycle"].unique()
     all_cycles = pd.Series(all_cycles)
     all_cycles = all_cycles.sort_values().values
@@ -29,15 +24,24 @@ def daten_filer(con,data):
         all_cycles,
         placeholder="Alle Zyklen ausgewählt"
     )
-    if not zelle_sel:
-        zelle = alle_zellen.flatten().tolist()
-    else:
-        zelle = zelle_sel
     if not cycle_sel:
         cycle = all_cycles.flatten().tolist()
     else:
         cycle = cycle_sel
     return cycle, zelle
+
+def zellen_filter(con,data):
+    alle_zellen = data["Zelle"].unique()
+    zelle_sel = con.multiselect(
+        "Zellen eingeben",
+        alle_zellen,
+        placeholder="Alle Zellen ausgewählt"
+    )
+    if not zelle_sel:
+        zelle = alle_zellen.flatten().tolist()
+    else:
+        zelle = zelle_sel
+    return zelle
 
 def typ_filer(con,data):
     alle_typ = data["Typ"].unique()

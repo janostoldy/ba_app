@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-from src.filtern import daten_filer, typ_filer
+from src.filtern import daten_filter, typ_filer
 from src.plotting_df import highlight_status, status_func
 from Classes.datenanalyse import Analyse
 import os
@@ -151,7 +151,7 @@ def edit_data_app():
 
     con1 = st.container(border=True)
     data = (DB.get_all_files())
-    cycle, zelle = daten_filer(con1,data)
+    cycle, zelle = daten_filter(con1, data)
     typ = typ_filer(con1,data)
     data = pd.DataFrame()
     for zel in zelle:

@@ -2,15 +2,15 @@ import plotly.express as px
 import streamlit as st
 import pandas as pd
 import io
-from src.filtern import daten_filer
+from src.filtern import daten_filter
 from src.plotting_functions import colors
 
 def kapazitaet_app():
     st.title("Kapazität")
     DB = st.session_state["DB"]
     alldata = DB.get_all_kapa()
-    con1 = st.container(border=True)
-    cycle, zelle = daten_filer(con1,alldata)
+    con0 = st.container(border=True)
+    cycle, zelle = daten_filter(con0, alldata)
     filt_data = pd.DataFrame()
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")

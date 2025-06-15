@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import io
-from src.filtern import daten_filer, soc_filer
+from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors
 
 def points_app():
@@ -10,7 +10,7 @@ def points_app():
     DB = st.session_state["DB"]
     alldata = DB.get_all_eis()
     con1 = st.container(border=True)
-    cycle, zelle = daten_filer(con1, alldata)
+    cycle, zelle = daten_filter(con1, alldata)
     all_soc = DB.get_all_eis_soc()
     soc = soc_filer(con1, all_soc)
     filt_data = pd.DataFrame()

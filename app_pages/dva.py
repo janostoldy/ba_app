@@ -3,14 +3,14 @@ import io
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-from src.filtern import daten_filer
+from src.filtern import daten_filter
 
 def dva_app():
     st.title("DVA Analysis")
     DB = st.session_state['DB']
     alldata = DB.get_all_dva()
     con1 = st.container(border=True)
-    cycle, zelle = daten_filer(con1,alldata)
+    cycle, zelle = daten_filter(con1, alldata)
     filt_data = alldata.iloc[0:0].copy()
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
