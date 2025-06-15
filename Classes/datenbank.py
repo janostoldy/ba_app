@@ -191,6 +191,10 @@ class Database:
     def get_all_files(self):
         return self.query("SELECT * FROM Files")
 
+    def get_all_eingang(self):
+        sql = "SELECT * FROM Files WHERE Cycle=0"
+        return self.query(sql)
+
     def get_file(self, cycle, zelle, typ):
         if typ == "*":
             sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s"""
