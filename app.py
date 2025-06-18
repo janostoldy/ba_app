@@ -6,13 +6,13 @@ from src.user import User, get_known_user
 from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
-from app_pages.points import points_app
+from app_pages.niquist import points_app, niqhist_app
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.kapa import kapazitaet_app
 from app_pages.analyse import analyse_app
 from app_pages.dva import dva_app
 from app_pages.zellen import add_zelle_app, show_zelle_app
-from app_pages.eingang import eingang_app
+from app_pages.pruefung import pruefung_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -57,12 +57,13 @@ if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
     analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
-    eingang_page = st.Page(eingang_app, title="Eingang", icon="📥")
+    eingang_page = st.Page(pruefung_app, title="Prüfungen", icon="📊")
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
+    niqhist_page = st.Page(niqhist_app, title="Niquist", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
         zellen_page = st.Page(show_zelle_app, title="Zellen", icon="🔋")
@@ -77,14 +78,15 @@ if st.session_state["authenticated"]:
                     dva_page,
                     eis_page,
                     deis_page,
+                    niqhist_page,
                     points_page,
                 ],
             }
         )
     elif user.role == "admin":
-        add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="📰")
-        delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="📰")
-        zelle_page = st.Page(add_zelle_app, title="Zellen hinzufügen", icon="📰")
+        add_data_page = st.Page(add_data_app, title="Daten hinzufügen", icon="🗒️")
+        delete_data_page = st.Page(edit_data_app, title="Daten bearbeiten", icon="🗒️")
+        zelle_page = st.Page(add_zelle_app, title="Zellen hinzufügen", icon="🗒️")
         pg = st.navigation(
             {
                 "Start": [home_page],
@@ -100,6 +102,7 @@ if st.session_state["authenticated"]:
                     dva_page,
                     eis_page,
                     deis_page,
+                    niqhist_page,
                     points_page,
                 ],
             }

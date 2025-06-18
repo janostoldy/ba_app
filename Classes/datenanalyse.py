@@ -55,7 +55,7 @@ class Analyse:
         
         niquist_df = pd.DataFrame(results)
         if save_data:
-            self.DB.df_in_DB(df=niquist_df, table_name='Niquist')
+            self.DB.df_in_DB(df=niquist_df, table_name='EIS_Points')
 
     def analyze_EIS_data(self, file_path, cycle, Zelle, save_data):
         try:

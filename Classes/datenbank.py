@@ -273,6 +273,13 @@ class Database:
                  WHERE EIS_Points.Datei = %s AND EIS_Points.SoC = %s"""
         return self.query(sql, params=params)
 
+    def get_eis_plots(self, Datei, soc):
+        params = (Datei,soc)
+        sql = """SELECT EIS.*, Files.Datum, Files.Cycle, Files.Zelle
+                 FROM EIS INNER JOIN Files ON EIS.Datei = Files.name
+                 WHERE EIS.Datei = %s AND EIS.SoC = %s"""
+        return self.query(sql, params=params)
+
 
     def query(self, sql_query, params=None):
         """

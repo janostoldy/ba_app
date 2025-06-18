@@ -93,7 +93,32 @@ def points_app():
 
             con2.dataframe(data_mod)
 
+def niqhist_app():
+    st.write("Niqhist")
+    DB = st.session_state["DB"]
+    alldata = DB.get_all_eis()
+    con1 = st.container(border=True)
+    cycle, zelle = daten_filter(con1, alldata)
+    all_soc = DB.get_all_eis_soc()
+    soc = soc_filer(con1, all_soc)
+    filt_data = pd.DataFrame()
+    spalten = ["Datei", "SoC", "Zelle", "Cycle", "Datum"]
+    if not cycle or not zelle:
+        st.warning("Keine Werte ausgewählt")
+    else:
+        con1 = st.container(border=False)
+        data = pd.DataFrame()
+        for z in zelle:
+            for c in cycle:
+                for s in soc:
+                    file = DB.get_file(c, z, "EIS")
+                    cycle_data = DB.get_eis_plots(file["name"].values[0], s)
+                    filt_data = pd.concat([filt_data, cycle_data[spalten]])
+                    data = pd.concat([data, cycle_data])
 
+        con1.subheader("Ausgewählte Daten:")
+        con1.write(filt_data)
+        con1.subheader("Plots:")
 
 def plot_points(data, name, y_values, subplots):
     fig = px.line(data,
