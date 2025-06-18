@@ -192,7 +192,7 @@ class Database:
         return self.query("SELECT * FROM Files")
 
     def get_all_eingang(self):
-        sql = "SELECT * FROM Files WHERE Cycle=0"
+        sql = "SELECT * FROM Files WHERE Typ!='Ageing'"
         return self.query(sql)
 
     def get_file(self, cycle, zelle, typ):
