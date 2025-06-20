@@ -32,6 +32,8 @@ class Analyse:
     def calc_niquist_data(self, eis_data,save_data):
         results = []
         for eis in eis_data:
+            eis = eis[eis["freqHz"] != 1999]
+            eis = eis.sort_values(by="freqHz")
             re = eis['calc_ReZOhm']
             im = eis['calc_ImZOhm']
             freq = eis['freqHz']
@@ -40,6 +42,9 @@ class Analyse:
             minima_indices = minima_indices[0]
             maxima_indices, _ = find_peaks(s_im)
             maxima_indices = maxima_indices[0]
+            zif_indizes = np.where(np.diff(np.sign(im)))[0]
+            zif_indizes = zif_indizes[0]
+
             temp = {
                 'SoC': eis['SoC'].values[0],
                 'Calc_ImA': eis['Calc_ImA'].values[0],
@@ -49,6 +54,9 @@ class Analyse:
                 'Im_Max': im.iloc[maxima_indices],
                 'Re_Max': re.iloc[maxima_indices],
                 'freq_Max': freq.iloc[maxima_indices],
+                'Im_ZIF': im.iloc[zif_indizes],
+                'Re_ZIF': re.iloc[zif_indizes],
+                'freq_ZIF': freq.iloc[zif_indizes],
                 'Datei': eis['Datei'].values[0]
             }
             results.append(temp)
@@ -98,7 +106,7 @@ class Analyse:
                     eis.loc[:, 'calc_times'] = eis['times'] - start_time.iloc[i]
                     eis.loc[:, 'hash'] = eis_hashes
                     eis.loc[:, 'Typ'] = 'Eis'
-                    eis.loc[:, 'Datei'] = os.path.basename(data_name)
+                    eis.loc[:, 'Datei'] = data_name
 
                 self.calc_niquist_data(eis_values, save_data)
                 if save_data:

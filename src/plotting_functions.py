@@ -1,5 +1,6 @@
 import re
-import xml.etree.ElementTree as ET
+import io
+
 
 colors = {
         'TUM:Extended:Violet': '#69085a',  # Violett
@@ -47,3 +48,35 @@ def get_linestyles():
             })
     return combination_line, combimation_dot
 
+def download_button(col, fig, key):
+    fig.update_layout(
+        template="plotly",  # <- wichtig!
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        font_color='black',
+        legend_title_font_color='black',
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='#e0e0e0',  # Farbe des Grids
+            gridwidth=1  # Dicke der Linien
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='#e0e0e0',
+            gridwidth=1
+        )
+    )
+
+    # --- Export als SVG ---
+    # Temporären Buffer für SVG-Datei anlegen
+    svg_buffer = io.BytesIO()
+    fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
+    svg_data = svg_buffer.getvalue()
+    col.download_button(
+        label="Download als SVG",
+        data=svg_data,
+        file_name="plot.svg",
+        mime="image/svg+xml",
+        key=key,
+        use_container_width=True
+    )
