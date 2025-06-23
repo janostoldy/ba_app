@@ -7,8 +7,11 @@ from src.filtern import daten_filter
 from src.plotting_functions import extract_sort_keys
 
 def eis_app():
-    DB = session_state["DB"]
     st.title("EIS Analyse")
+    DB = session_state["DB"]
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     con1 = st.container(border=True)
     data = DB.get_all_eis()
     cycle, zelle = daten_filter(con1, data)

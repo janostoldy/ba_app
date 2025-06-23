@@ -4,6 +4,9 @@ import pandas as pd
 def add_zelle_app():
     st.title("Zellen hinzufügen")
     DB = st.session_state["DB"]
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     con1 = st.container(border=True)
     col1, col2, col3 = con1.columns(3)
     id = col1.text_input("Zelle ID", placeholder="SN0001", max_chars=20)

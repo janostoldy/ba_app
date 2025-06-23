@@ -5,6 +5,9 @@ from src.filtern import zellen_filter
 def eingang_app():
     st.title("Eingangsprüfung")
     DB = st.session_state["DB"]
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     alldata = DB.get_all_eingang()
     zellen = alldata["Zelle"].unique()
 

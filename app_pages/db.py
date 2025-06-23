@@ -10,6 +10,9 @@ import os
 def add_data_app():
     st.title("Daten hinzufügen")
     DB = st.session_state["DB"]
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     DA = Analyse(DB)
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
@@ -148,7 +151,9 @@ def file_bearbeiten(files):
 def edit_data_app():
     st.title("Daten bearbeiten")
     DB = st.session_state["DB"]
-
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     con1 = st.container(border=True)
     data = (DB.get_all_files())
     cycle, zelle = daten_filter(con1, data)

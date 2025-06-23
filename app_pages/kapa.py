@@ -8,6 +8,9 @@ from src.plotting_functions import colors
 def kapazitaet_app():
     st.title("Kapazität")
     DB = st.session_state["DB"]
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     alldata = DB.get_all_kapa()
     con0 = st.container(border=True)
     cycle, zelle = daten_filter(con0, alldata)

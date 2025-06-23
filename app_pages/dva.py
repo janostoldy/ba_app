@@ -8,6 +8,9 @@ from src.filtern import daten_filter
 def dva_app():
     st.title("DVA Analysis")
     DB = st.session_state['DB']
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     alldata = DB.get_all_dva()
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)
