@@ -6,7 +6,7 @@ from src.user import User, get_known_user
 from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
-from app_pages.points import points_app
+from app_pages.niquist import points_app, niqhist_app
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.kapa import kapazitaet_app
 from app_pages.analyse import analyse_app
@@ -60,6 +60,7 @@ if st.session_state["authenticated"]:
     eingang_page = st.Page(eingang_app, title="Eingang", icon="📥")
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
+    niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
@@ -74,6 +75,7 @@ if st.session_state["authenticated"]:
                     zellen_page,
                     eingang_page,
                     kapa_page,
+                    niqhist_page,
                     dva_page,
                     eis_page,
                     deis_page,
@@ -97,6 +99,7 @@ if st.session_state["authenticated"]:
                     analyse_page,
                     eingang_page,
                     kapa_page,
+                    niqhist_page,
                     dva_page,
                     eis_page,
                     deis_page,

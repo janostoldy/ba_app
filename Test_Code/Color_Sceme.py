@@ -23,7 +23,8 @@ def plot_colors(colors):
     for i, (name, hex_value) in enumerate(colors.items()):
         if len (hex_value) == 7:
             ax.barh(i, 1, color=hex_value, edgecolor='black')
-            ax.text(0.5, i, name, va='center', ha='center', fontsize=10, color='white' if hex_value != '#ffffff' else 'black')
+            label = f"{name}: {hex_value}"
+            ax.text(0.5, i, label, va='center', ha='center', fontsize=10, color='white' if hex_value != '#ffffff' else 'black')
     ax.set_yticks(range(len(colors)))
     ax.set_yticklabels([])
     ax.set_xticks([])

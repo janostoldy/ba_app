@@ -26,7 +26,8 @@ def pruefung_app():
                     "Zyklus": cyc,
                     "Datum": file["Datum"],
                     "Kap": kap["Kapa"].values[0],
-                    "ZIF": zif
+                    "ZIF": zif,
+                    "RE_ZIF": points["Re_ZIF"]
                 })
                 filt_data = pd.concat([filt_data, dat], ignore_index=True)
 
