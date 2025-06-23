@@ -192,7 +192,7 @@ class Database:
         return self.query("SELECT * FROM Files")
 
     def get_all_eingang(self):
-        sql = "SELECT * FROM Files WHERE Cycle=0"
+        sql = "SELECT * FROM Files WHERE Typ!='Ageing'"
         return self.query(sql)
 
     def get_file(self, cycle, zelle, typ):
@@ -271,6 +271,13 @@ class Database:
         sql = """SELECT EIS_Points.*, Files.Datum, Files.Cycle, Files.Zelle
                  FROM EIS_Points INNER JOIN Files ON EIS_Points.Datei=Files.name 
                  WHERE EIS_Points.Datei = %s AND EIS_Points.SoC = %s"""
+        return self.query(sql, params=params)
+
+    def get_eis_plots(self, Datei, soc):
+        params = (Datei,soc)
+        sql = """SELECT EIS.*, Files.Datum, Files.Cycle, Files.Zelle
+                 FROM EIS INNER JOIN Files ON EIS.Datei = Files.name
+                 WHERE EIS.Datei = %s AND EIS.SoC = %s"""
         return self.query(sql, params=params)
 
 

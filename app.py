@@ -4,6 +4,7 @@ import pandas as pd
 from app_pages.analyse import analyse_app
 from src.user import User, get_known_user
 from app_pages.home import home_app
+from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
 from app_pages.points import points_app
 from app_pages.db import add_data_app, edit_data_app
@@ -16,7 +17,7 @@ from app_pages.eingang import eingang_app
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
 
-st.set_page_config(layout="wide", page_icon=":battery:", page_title="Analyse-Tool")
+st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
 # Anmeldung
 if "authenticated" not in st.session_state:
@@ -60,6 +61,7 @@ if st.session_state["authenticated"]:
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
+    deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
@@ -74,6 +76,7 @@ if st.session_state["authenticated"]:
                     kapa_page,
                     dva_page,
                     eis_page,
+                    deis_page,
                     points_page,
                 ],
             }
@@ -96,6 +99,7 @@ if st.session_state["authenticated"]:
                     kapa_page,
                     dva_page,
                     eis_page,
+                    deis_page,
                     points_page,
                 ],
             }
