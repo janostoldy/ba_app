@@ -4,15 +4,14 @@ import numpy as np
 
 from src.filtern import daten_filter, typ_filer
 from src.plotting_df import highlight_status, status_func
+from src.db_help import check_db
 from Classes.datenanalyse import Analyse
 import os
 
 def add_data_app():
     st.title("Daten hinzufügen")
     DB = st.session_state["DB"]
-    if DB is None:
-        st.error("Keine Verbindung zur Datenbank")
-        st.stop()
+    check_db(DB)
     DA = Analyse(DB)
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")

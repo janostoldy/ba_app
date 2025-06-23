@@ -5,13 +5,12 @@ import pandas as pd
 
 from src.filtern import daten_filter
 from src.plotting_functions import extract_sort_keys
+from src.db_help import check_db
 
 def eis_app():
     st.title("EIS Analyse")
     DB = session_state["DB"]
-    if DB is None:
-        st.error("Keine Verbindung zur Datenbank")
-        st.stop()
+    check_db(DB)
     con1 = st.container(border=True)
     data = DB.get_all_eis()
     cycle, zelle = daten_filter(con1, data)

@@ -4,13 +4,12 @@ import pandas as pd
 import io
 from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors
+from src.db_help import check_db
 
 def points_app():
     st.title("Points")
     DB = st.session_state["DB"]
-    if DB is None:
-        st.error("Keine Verbindung zur Datenbank")
-        st.stop()
+    check_db(DB)
     alldata = DB.get_all_eis()
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)

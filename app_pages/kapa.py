@@ -4,13 +4,12 @@ import pandas as pd
 import io
 from src.filtern import daten_filter
 from src.plotting_functions import colors
+from src.db_help import check_db
 
 def kapazitaet_app():
     st.title("Kapazität")
     DB = st.session_state["DB"]
-    if DB is None:
-        st.error("Keine Verbindung zur Datenbank")
-        st.stop()
+    check_db(DB)
     alldata = DB.get_all_kapa()
     con0 = st.container(border=True)
     cycle, zelle = daten_filter(con0, alldata)
