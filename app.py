@@ -12,7 +12,7 @@ from app_pages.kapa import kapazitaet_app
 from app_pages.analyse import analyse_app
 from app_pages.dva import dva_app
 from app_pages.zellen import add_zelle_app, show_zelle_app
-from app_pages.eingang import eingang_app
+from app_pages.pruefung import pruefung_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
@@ -57,7 +57,7 @@ if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
     analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
-    eingang_page = st.Page(eingang_app, title="Eingang", icon="📥")
+    eingang_page = st.Page(pruefung_app, title="Prüfungen", icon="📥")
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")

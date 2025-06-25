@@ -37,24 +37,32 @@ def points_app():
         col1, col2 = con1.columns(2)
         options = ["SoC", "Zelle"]
         selected = col1.segmented_control("Subplots",options,help="Wähle Wert aus der in einem Diagramm angezeigt wird",default=options[1])
-        if selected == "SoC":
-            plots = soc
-            plot_name = "SoC"
-            subplots = "Zelle"
-            einheit = "mAh"
-        else:
-            plots = zelle
-            plot_name = "Zelle"
-            subplots = "SoC"
-            einheit = ""
-
         options = [col for col in data.columns if col not in ["Datei", "Cycle", "Zelle", "Datum", "SoC"]]
         y_values = col2.selectbox("Y-Werte", options)
+        graphs = col2.toggle("Alle Grafen in einem Plot")
+        if not graphs:
+            if selected == "SoC":
+                plots = soc
+                plot_name = "SoC"
+                subplots = "Zelle"
+                einheit = "mAh"
+            else:
+                plots = zelle
+                plot_name = "Zelle"
+                subplots = "SoC"
+                einheit = ""
+        else:
+            plots = ["allen ausgewählten Daten"]
+            plot_name = ""
+            data_mod = data
+            subplots = "Zelle"
+            einheit = ""
 
         for p in plots:
             con2 = st.container(border=False)
             con2.divider()
-            data_mod = data[data[plot_name] == p]
+            if not graphs:
+                data_mod = data[data[plot_name] == p]
             name = f"{plot_name} {p} {einheit}"
             fig = plot_points(data_mod, name, y_values,subplots)
             con2.plotly_chart(fig)
@@ -88,6 +96,7 @@ def niqhist_app():
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])
                     data_list.append(cycle_data)
+        data.drop(columns=["hash"], inplace=True)
 
         con1.subheader("Ausgewählte Daten:")
         con1.write(filt_data.drop_duplicates())
@@ -100,32 +109,45 @@ def niqhist_app():
         key = 0
         col1, col2 = con1.columns(2)
         options = ["SoC", "Zyklus"]
-        selected = col1.segmented_control("Subplots", options,
-                                          help="Wähle Wert aus der in einem Diagramm angezeigt wird",
-                                          default=options[1])
+
         kHz = col2.toggle("2kHz anzeigen")
         tabels = col2.toggle("Tabellen anzeigen")
+        graphs = col2.toggle("Alle Grafen in einem Plot")
 
-        if selected == "SoC":
-            plots = zelle
-            plot_name = "Zelle"
-            subplots = "SoC"
-            subplot_name = "SoC"
+        selected = col1.segmented_control("Subplots", options,
+                                          help="Wähle Wert aus der in einem Diagramm angezeigt wird",
+                                          default=options[1],
+                                          disabled=graphs)
+
+        if not graphs:
+            if selected == "SoC":
+                plots = zelle
+                plot_name = "Zelle"
+                subplots = "SoC"
+                subplot_name = "über SoC"
+            else:
+                plots = zelle
+                plot_name = "Zelle"
+                subplots = "Cycle"
+                subplot_name = "über Zyklus"
         else:
-            plots = zelle
-            plot_name = "Zelle"
-            subplots = "Cycle"
-            subplot_name = "Zyklus"
+            plots = ["allen ausgewählten Daten"]
+            data_mod = data
+            plot_name = ""
+            subplot_name = ""
+            subplots  = "Datei"
+
 
         for p in plots:
             con2 = st.container(border=False)
             con2.divider()
-            data_mod = data[data[plot_name] == p]
-            data_mod = data_mod.sort_values(by="freqHz")
+            if not graphs:
+                data_mod = data[data[plot_name] == p]
+            data_mod.sort_values(by=["Datei","freqHz"], inplace=True)
 
             if not kHz:
                 data_mod = data_mod[data_mod["freqHz"] != 1999]
-            name = f"Niqhist plot von {p} über {subplot_name}"
+            name = f"Niqhist plot von {p} {subplot_name}"
             fig = plot_graphs(data_mod, name,subplots)
             con2.plotly_chart(fig)
             space, col2 = con2.columns([4, 1])
@@ -154,8 +176,8 @@ def plot_graphs(data, name, subplots):
     fig = px.line(data,
                   x="calc_ReZOhm",
                   y="calc_ImZOhm",
-                  #color=subplots,
-                  title=f"Niquist-Plot von {name}",
+                  color=subplots,
+                  title=name,
                   markers=True,
                   color_discrete_sequence=list(colors.values())
                   )
