@@ -44,7 +44,7 @@ def dva_app():
 
 def plot_dva(Data, name):
     # Plot erstellen
-    fig = px.line(Data, x='QQomAh_smoove', y='calc_dV_dQ', title=f'Differential Voltage Analysis (DVA) of: {name}',
+    fig = px.line(Data, x='QQomAh_smoove', y='calc_dV_dQ', title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'})
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',
