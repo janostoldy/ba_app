@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from galvani import BioLogic
 import pandas as pd
 from config import mes_spalten
-from src.plotting_functions import Get_Colors
+from src.plotting_functions import get_linestyles
 
 def analyse_app():
     st.title("Daten Analysieren")
@@ -20,7 +20,7 @@ def analyse_app():
 
     if 'df' in locals():
         st.dataframe(df)
-        combination_line, combination_dot = Get_Colors()
+        combination_line, combination_dot = get_linestyles()
         time_columns = [col for col in df.columns if 'time' in col.lower()]
         if time_columns:
             time = df[time_columns[0]]

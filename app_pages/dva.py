@@ -3,14 +3,18 @@ import io
 import plotly.express as px
 import streamlit as st
 import pandas as pd
-from src.filtern import daten_filer
+from src.filtern import daten_filter
+from src.plotting_functions import download_button
 
 def dva_app():
     st.title("DVA Analysis")
     DB = st.session_state['DB']
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
     alldata = DB.get_all_dva()
     con1 = st.container(border=True)
-    cycle, zelle = daten_filer(con1,alldata)
+    cycle, zelle = daten_filter(con1, alldata)
     filt_data = alldata.iloc[0:0].copy()
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
@@ -28,40 +32,10 @@ def dva_app():
                 fig = plot_dva(data,file["name"].values[0])
                 fig = plot_dva_points(fig, data, points)
                 con2.plotly_chart(fig)
-                fig.update_layout(
-                    template="plotly",  # <- wichtig!
-                    paper_bgcolor='white',
-                    plot_bgcolor='white',
-                    font_color='black',
-                    legend_title_font_color='black',
-                    xaxis=dict(
-                        showgrid=True,
-                        gridcolor='#e0e0e0',  # Farbe des Grids
-                        gridwidth=1  # Dicke der Linien
-                    ),
-                    yaxis=dict(
-                        showgrid=True,
-                        gridcolor='#e0e0e0',
-                        gridwidth=1
-                    )
-                )
-
-                # --- Export als SVG ---
-                # Temporären Buffer für SVG-Datei anlegen
-                svg_buffer = io.BytesIO()
-                fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
-                svg_data = svg_buffer.getvalue()
-                space1, col1, col2 = con2.columns([1,20,3])
+                space1, col1, col2 = con2.columns([1, 20, 3])
                 df_points = pd.DataFrame(points["Value"].values.reshape(1, -1), columns=points["Point"].values)
                 col1.dataframe(df_points, hide_index=True)
-                # Download-Button für SVG-Datei
-                col2.download_button(
-                    label="Download als SVG",
-                    data=svg_data,
-                    file_name="plot.svg",
-                    mime="image/svg+xml",
-                    key = key
-                )
+                download_button(col2,fig,key)
                 key += 1
 
         con1.subheader("Ausgewählte Daten:")
@@ -70,7 +44,7 @@ def dva_app():
 
 def plot_dva(Data, name):
     # Plot erstellen
-    fig = px.line(Data, x='QQomAh_smoove', y='calc_dV_dQ', title=f'Differential Voltage Analysis (DVA) of: {name}',
+    fig = px.line(Data, x='QQomAh_smoove', y='calc_dV_dQ', title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'})
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',

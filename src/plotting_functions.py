@@ -1,7 +1,21 @@
 import re
-import xml.etree.ElementTree as ET
+import io
 
-def extract_sort_keys(name):  #TODO: Muss geändert werden
+
+colors = {
+        'TUM:Extended:Violet': '#69085a',  # Violett
+        'TUM:Extended:Navy': '#0f1a5f',  # Dunkelblau / Indigo
+        'TUM:Primary:Blue': '#0073cf',  # Blau
+        'TUM:Extended:Teal': '#00778a',  # Türkis / Cyan
+        'TUM:Extended:Forest': '#007c30',  # Grün
+        'TUM:Extended:Lime': '#679a1d',  # Gelbgrün
+        'TUM:Extended:Goldenrod': '#f9ba00',  # Dunkelgelb
+        'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
+        'TUM:Extended:Maroon': '#9c0d16',  # Dunkelrot, noch unter Rot
+        'TUM:Extended:Red': '#c4071b'  # Rot
+    }
+
+def extract_sort_keys(name):
     # Suche nach den relevanten Zahlen
     cycle_match = re.search(r'Cycle_(\d+)', name)
     qcell_match = re.search(r'Qcell_(\d+)', name)
@@ -14,36 +28,7 @@ def extract_sort_keys(name):  #TODO: Muss geändert werden
 
     return (cycle, qcell, ima)
 
-def extract_colors_from_soc(file_path):
-    colors = {}
-    # Namespace definieren
-    namespaces = {'draw': 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0'}
-
-    tree = ET.parse(file_path)
-    root = tree.getroot()
-
-    # Iteriere über alle `draw:color`-Elemente
-    for color in root.findall('.//draw:color', namespaces):
-        color_name = color.get('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}name')  # Vollständiger Namespace
-        color_value = color.get('{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}color')  # Vollständiger Namespace
-        if color_name and color_value:
-            colors[color_name] = color_value
-
-    return colors
-
-def Get_Colors():
-    colors = {
-        'TUM:Extended:Violet': '#69085a',  # Violett
-        'TUM:Extended:Navy': '#0f1a5f',  # Dunkelblau / Indigo
-        'TUM:Primary:Blue': '#0073cf',  # Blau
-        'TUM:Extended:Teal': '#00778a',  # Türkis / Cyan
-        'TUM:Extended:Forest': '#007c30',  # Grün
-        'TUM:Extended:Lime': '#679a1d',  # Gelbgrün
-        'TUM:Extended:Goldenrod': '#f9ba00',  # Dunkelgelb
-        'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
-        'TUM:Extended:Maroon': '#9c0d16',  # Dunkelrot, noch unter Rot
-        'TUM:Extended:Red': '#c4071b'  # Rot
-    }
+def get_linestyles():
     color_list = list(colors.values())
     line_styles = ['solid', 'dash', 'dot', 'dashdot']
     dot_styles = ['circle', 'square', 'diamond', 'cross']
@@ -63,3 +48,35 @@ def Get_Colors():
             })
     return combination_line, combimation_dot
 
+def download_button(col, fig, key):
+    fig.update_layout(
+        template="plotly",  # <- wichtig!
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        font_color='black',
+        legend_title_font_color='black',
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='#e0e0e0',  # Farbe des Grids
+            gridwidth=1  # Dicke der Linien
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='#e0e0e0',
+            gridwidth=1
+        )
+    )
+
+    # --- Export als SVG ---
+    # Temporären Buffer für SVG-Datei anlegen
+    svg_buffer = io.BytesIO()
+    fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
+    svg_data = svg_buffer.getvalue()
+    col.download_button(
+        label="Download als SVG",
+        data=svg_data,
+        file_name="plot.svg",
+        mime="image/svg+xml",
+        key=key,
+        use_container_width=True
+    )
