@@ -24,6 +24,7 @@ def pruefung_app():
                 dat = pd.DataFrame({
                     "Zelle": z,
                     "Zyklus": cyc,
+                    "SoC": s,
                     "Datum": file["Datum"],
                     "Kap": kap["Kapa"].values[0],
                     "ZIF": zif,
