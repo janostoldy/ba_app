@@ -211,6 +211,12 @@ class Database:
     def get_all_zells(self):
         return self.query("SELECT * FROM Zellen")
 
+    def update_zelle(self, Zelle, cycle):
+        sql = f"""UPDATE Zellen SET Cycle=%s WHERE id=%s"""
+        params = (cycle, Zelle)
+        self.cur.execute(sql, params)
+        self.conn.commit()
+
     def get_kapa_cycles(self):
         return self.query("SELECT DISTINCT Cycle FROM Files WHERE Typ='Kapa'")
 
