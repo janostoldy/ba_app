@@ -20,9 +20,11 @@ def add_data_app():
                              placeholder="/Data")
     st.session_state["folder"] = folder
     alle_zellen = DB.get_all_zells()
-    zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"])
-    typs = ["Eingangsprüfung", "EIS-Analyse","DVA-Analyse","Kapazitäts-Messung"]
-    typ = con2.selectbox("Analyse Art",typs)
+    zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"], index=st.session_state.get("zelle_index",None))
+    st.session_state["zelle_index"] = alle_zellen["id"].tolist().index(zelle) if zelle in alle_zellen["id"].tolist() else None
+    typs = ["Eingangsprüfung", "EIS-Analyse","Ageing","DVA-Analyse","Kapazitäts-Messung","Thermische Relaxation"]
+    typ = con2.selectbox("Analyse Art",typs, index=st.session_state.get("typ_index",None))
+    st.session_state["typ_index"] = typs.index(typ) if typ in typs else None
     last_cycle = DB.get_zell_cycle(zelle)
     last_cycle = last_cycle.values[0][0] if not last_cycle.empty else 1
     cycle = con2.number_input("Zyklus eingeben", min_value=0, max_value=1000, value=last_cycle, step=1)
@@ -72,21 +74,24 @@ def add_data_app():
             )
             selected_rows = st.session_state.filter_files.iloc[event.selection.rows]
             if con2.button("Analyse", type="primary", use_container_width=True, disabled=dis_button):
-                try:
-                    file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
-                    with st.spinner("Analysieren...",show_time=True):
-                        if typ == "EIS-Analyse":
-                            DA.analyze_EIS_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
-                        elif typ == "DVA-Analyse":
-                            DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
-                        elif typ == "Kapazitäts-Messung":
-                            DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
-                        elif typ == "Eingangsprüfung":
-                            DA.analyse_eingang(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
-                        con2.success("Daten erfolgreich in Datenbank gespeichert.")
-                        st.rerun()
-                except Exception as e:
-                    con2.error(f"Fehler bei {typ} -> {e}")
+                file_dir = [os.path.join(folder, f) for f in selected_rows["Datei"]]
+                my_bar = st.progress(0, text="Daten werden analysiert...")
+                if typ == "EIS-Analyse":
+                    DA.analyze_EIS_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                elif typ == "DVA-Analyse":
+                    DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                elif typ == "Kapazitäts-Messung":
+                    DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                elif typ == "Eingangsprüfung":
+                    DA.analyse_eingang(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
+                elif typ == "Ageing":
+                    DA.analyze_Aeging(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
+                elif typ == "Thermische Relaxation":
+                    DA.add_relax(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                my_bar.progress(1, text="Datenanalyse erfolgreich!")
+                my_bar.empty()
+                con2.success("Daten erfolgreich in Datenbank gespeichert.")
+                    #st.rerun()
         else:
             con2.warning("Keine Datein im Ordner gefunden.")
             # Liste der Unterordner im angegebenen Ordner anzeigen
@@ -110,6 +115,7 @@ def add_data_app():
     if 'datei_liste' in locals():
         #df.columns = ['Datei', 'Zyklus', 'Zelle']
         st.write("Dateien in Datenbank:")
+        datei_liste.sort_values(by=["Datum"], ascending=False, inplace=True)
         st.dataframe(datei_liste)
 
 @st.dialog("Löschen bestätigen",width="small")

@@ -12,22 +12,56 @@ class Analyse:
         # Initialisiere die Datenbankverbindung
         self.DB = datenbank
 
-    def analyse_eingang(self, file_path, cycle, Zelle, save_data):
+    def analyse_eingang(self, file_path, cycle, Zelle, save_data, bar):
         for data_path in file_path:
             data_name = os.path.basename(data_path)
             data_path = [data_path]
             if "01_MB" in data_name:
+                bar.progress(1 / 3, text="Kapazität analysieren...")
                 self.analys_kapa_data(data_path, cycle, Zelle, save_data)
             elif "02_MB" in data_name:
+                bar.progress(2 / 3, text="OCV analysieren...")
                 self.analys_OCV_data(data_path, cycle, Zelle, save_data)
             elif "03_MB" in data_name:
+                bar.progress(3 / 3, text="EIS analysieren...")
                 self.analyze_EIS_data(data_path, cycle, Zelle, save_data)
+            else:
+                raise Exception("Keine Eingangsprüfung!")
 
 
     def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
         # Erstelle einen Hash-Wert für die Zeile
         hash_input = f"{Messung}{freqHz}{cycle}{soc}{ima}{zelle}"
         return hashlib.sha256(hash_input.encode()).hexdigest()
+
+    def add_relax(self, file_path, cycle, Zelle, save_data):
+        try:
+            for data_path in file_path:
+                data_name = os.path.basename(data_path)
+                if save_data:
+                    self.DB.insert_file(data_name, cycle, "Thermische-Relaxation", Zelle, "Relaxation")
+        except Exception as e:
+            raise Exception(f"Fehler bei Relaxation -> {e}")
+
+    def analyze_Aeging(self, file_path, cycle, Zelle, save_data, bar):
+        try:
+            n_files = len(file_path)
+            for i, data_path in enumerate(file_path):
+                data_name = os.path.basename(data_path)
+                bar.progress((i+1)/n_files, text=f"Analysieren von Datei {i+1} von {n_files}: {data_name}")
+                mpr_file = BioLogic.MPRfile(data_path)
+                df = pd.DataFrame(mpr_file.data)
+                ageing_raw = df.rename(columns=mes_spalten)
+                if 'ZOhm' in ageing_raw:
+                    self.analyze_EIS_data([data_path], cycle, Zelle, save_data)
+                    continue
+                aeging_cycles = ageing_raw['cycle number'].iloc[-1] - ageing_raw['cycle number'].iloc[0]
+                cycle = cycle + aeging_cycles
+                if save_data:
+                    self.DB.update_zelle(Zelle, cycle)
+                    self.DB.insert_file(data_name, cycle, "Aeging-Analyse", Zelle, "Ageing")
+        except Exception as e:
+            raise Exception(f"Fehler bei Ageing-Analyse -> {e}")
 
     def calc_niquist_data(self, eis_data,save_data):
         results = []
