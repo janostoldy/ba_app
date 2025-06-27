@@ -1,7 +1,6 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-import io
 from Classes.datenanalyse import Analyse
 from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors, download_button
@@ -163,7 +162,7 @@ def plot_points(data, name, y_values, subplots):
                   color=subplots,
                   title=f"{y_values} von {name}",
                   markers=True,
-                  color_discrete_sequence=list(colors.values())
+                  color_discrete_sequence=list(colors.values()),
                   )
     fig.update_layout(
         yaxis_title=y_values,
@@ -179,7 +178,8 @@ def plot_graphs(data, name, subplots):
                   color=subplots,
                   title=name,
                   markers=True,
-                  color_discrete_sequence=list(colors.values())
+                  color_discrete_sequence=list(colors.values()),
+                  hover_data="freqHz"
                   )
     fig.update_layout(
         yaxis_title='ImZ (Ohm)',
