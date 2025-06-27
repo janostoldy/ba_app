@@ -22,8 +22,10 @@ def points_app():
         data = pd.DataFrame()
         for z in zelle:
             for c in cycle:
+                file = DB.get_file(c, z, "EIS")
+                if file.empty:
+                    continue
                 for s in soc:
-                    file = DB.get_file(c, z, "EIS")
                     cycle_data = DB.get_eis_points(file["name"].values[0],s)
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])
