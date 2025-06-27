@@ -239,10 +239,10 @@ class Analyse:
                 Q0_val = QQomAh_smoove[0]
                 Q0 = dva_edit['QQomAh_smoove'].iloc[0]
                 Qactual = dva_edit['QQomAh_smoove'].iloc[-1]
-                peaks = find_peaks(dva_edit['calc_dV_dQ'].values, distance=500, height=0.00035)[0]
-                Q1 = dva_edit['QQomAh_smoove'].iloc[peaks[2]]
+                peaks = find_peaks(dva_edit['calc_dV_dQ'].values, distance=700, height=0.00035)[0]
+                Q1 = dva_edit['QQomAh_smoove'].iloc[peaks[-2]]
                 Q2 = Qactual - Q1
-                Q3 = Qactual - dva_edit['QQomAh_smoove'].iloc[peaks[3]]
+                Q3 = Qactual - dva_edit['QQomAh_smoove'].iloc[peaks[-1]]
 
                 calc_Points = pd.DataFrame({
                     'Datei': [data_name] * 5,

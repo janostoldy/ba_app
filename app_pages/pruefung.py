@@ -15,21 +15,26 @@ def pruefung_app():
     filt_data = pd.DataFrame()
     for z in zellen:
         for cyc in cyclus:
-            for s in soc:
-                file = DB.get_file(cyc, z,"Kapa")
-                kap = DB.get_kapa(file["name"].values[0])
-                file = DB.get_file(cyc, z,"EIS")
-                points = DB.get_eis_points(file["name"].values[0],s)
-                zif = points["freq_ZIF"]
-                dat = pd.DataFrame({
-                    "Zelle": z,
-                    "Zyklus": cyc,
-                    "SoC": s,
-                    "Datum": file["Datum"],
-                    "Kap": kap["Kapa"].values[0],
-                    "ZIF": zif,
-                    "RE_ZIF": points["Re_ZIF"]
-                })
-                filt_data = pd.concat([filt_data, dat], ignore_index=True)
+            file = DB.get_file(cyc, z, "Kapa")
+            if file.empty:
+                continue
+            kap = DB.get_kapa(file["name"].values[0])
+            file = DB.get_file(cyc, z, "EIS")
+            if not isinstance(file, list):
+                file = [file]
+            for f in file:
+                for s in soc:
+                    points = DB.get_eis_points(f["name"].values[0],s)
+                    zif = points["freq_ZIF"]
+                    dat = pd.DataFrame({
+                        "Zelle": z,
+                        "Zyklus": cyc,
+                        "SoC": s,
+                        "Datum": f["Datum"],
+                        "Kap": kap["Kapa"].values[0],
+                        "ZIF": zif,
+                        "RE_ZIF": points["Re_ZIF"]
+                    })
+                    filt_data = pd.concat([filt_data, dat], ignore_index=True)
 
     st.dataframe(filt_data)

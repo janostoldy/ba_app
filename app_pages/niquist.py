@@ -91,6 +91,8 @@ def niqhist_app():
             for c in cycle:
                 for s in soc:
                     file = DB.get_file(c, z, "EIS")
+                    if file.empty:
+                        continue
                     cycle_data = DB.get_eis_plots(file["name"].values[0], s)
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])

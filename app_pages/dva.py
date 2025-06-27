@@ -24,9 +24,11 @@ def dva_app():
 
         for z in zelle:
             for c in cycle:
+                file = DB.get_file(c, z,"DVA")
+                if file.empty:
+                    continue
                 con2 = st.container(border=False)
                 con2.divider()
-                file = DB.get_file(c, z,"DVA")
                 filt_data = pd.concat([filt_data, file])
                 data, points = DB.get_dva(file["name"].values[0])
                 fig = plot_dva(data,file["name"].values[0])
@@ -63,7 +65,10 @@ def plot_dva_points(fig, calc_Data, calc_Points):
     for _, row in calc_Points.iterrows():
         if not row['Point'] == 'Q0':
             if row['Point'] in ['Q2', 'Q3']:
-                y_value = calc_Data.loc[calc_Data['QQomAh_smoove'] == row['X_Start'], 'calc_dV_dQ'].values[0]
+                try:
+                    y_value = calc_Data.loc[calc_Data['QQomAh_smoove'] == row['X_Start'], 'calc_dV_dQ'].values[0]
+                except:
+                    y_value = calc_Data.loc[0, 'calc_dV_dQ']
                 min_value = min(calc_Data['calc_dV_dQ'])
                 fig.add_shape(
                     type="line",

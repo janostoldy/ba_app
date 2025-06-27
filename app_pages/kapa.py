@@ -22,6 +22,8 @@ def kapazitaet_app():
         for z in zelle:
             for c in cycle:
                 file = DB.get_file(c, z,"Kapa")
+                if file.empty:
+                    continue
                 kap = DB.get_kapa(file["name"].values[0])
                 filt_data = pd.concat([filt_data, kap])
                 data = pd.concat([data, kap])
