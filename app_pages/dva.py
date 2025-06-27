@@ -49,7 +49,7 @@ def plot_dva(Data, name):
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',
         xaxis_title='Kapazität (Ah)',
-        template='simple_white'
+        template='simple_white',
     )
     fig.update_traces(line=dict(color="#e37222"))
 
