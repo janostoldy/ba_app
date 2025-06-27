@@ -3,9 +3,8 @@ import json
 import io
 from app_pages.eis import Plot_EIS
 from app_pages.DEIS import Plot_DEIS
-from app_pages.niquist import Plot_Points
 from src.plotting_functions import get_linestyles
-from Classes.datenanalyse import EIS_Analyse
+
 from Classes.datenbank import Database
 
 #Run this Comand in Terminal: streamlit run /Users/janostoldy/Documents/git_projecte/ba/EIS_APP.py
