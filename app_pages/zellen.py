@@ -8,7 +8,7 @@ def add_zelle_app():
     check_db(DB)
     con1 = st.container(border=True)
     col1, col2, col3 = con1.columns(3)
-    id = col1.text_input("Zelle ID", placeholder="SN0001", max_chars=20)
+    id = col1.text_input("Zelle ID", placeholder="JT_VTC_001", max_chars=20)
     cycle = col2.number_input("Zelle Cycle", min_value=0, max_value=1000, value=0, step=1)
     Typ = col3.text_input("Zelle Typ", placeholder="Zellen Typ" ,max_chars=20)
     info = con1.text_area("Zelle Info", placeholder="Zelle Info", max_chars=255)
