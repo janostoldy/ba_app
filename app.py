@@ -64,7 +64,7 @@ if st.session_state["authenticated"]:
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
-´    points_page = st.Page(points_app, title="Points", icon="📈")
+    points_page = st.Page(points_app, title="Points", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
         zellen_page = st.Page(show_zelle_app, title="Zellen", icon="🔋")
