@@ -37,4 +37,5 @@ def pruefung_app():
                     })
                     filt_data = pd.concat([filt_data, dat], ignore_index=True)
 
+    filt_data = filt_data.dropna()
     st.dataframe(filt_data)

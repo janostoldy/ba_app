@@ -111,34 +111,34 @@ def niqhist_app():
 
         key = 0
         col1, col2 = con1.columns(2)
-        options = ["SoC", "Zyklus"]
 
         kHz = col2.toggle("2kHz anzeigen")
         tabels = col2.toggle("Tabellen anzeigen")
         graphs = col2.toggle("Alle Grafen in einem Plot")
-
-        selected = col1.segmented_control("Subplots", options,
+        options = ["SoC", "Cycle","Zelle"]
+        subplots = col1.segmented_control("Subplots", options,
                                           help="Wähle Wert aus der in einem Diagramm angezeigt wird",
                                           default=options[1],
                                           disabled=graphs)
-
+        big_plot = col1.segmented_control("Plots", options,
+                                          help="Wähle Wert der einzelnen Diagramme",
+                                          default=options[2],
+                                          disabled=graphs)
         if not graphs:
-            if selected == "SoC":
+            if big_plot == "SoC":
+                plots = soc
+                plot_name = "SoC"
+            elif big_plot == "Zyklus":
+                plots = cycle
+                plot_name = "Zyklus"
+            elif big_plot == "Zelle":
                 plots = zelle
                 plot_name = "Zelle"
-                subplots = "SoC"
-                subplot_name = "über SoC"
-            else:
-                plots = zelle
-                plot_name = "Zelle"
-                subplots = "Cycle"
-                subplot_name = "über Zyklus"
+
         else:
             plots = ["allen ausgewählten Daten"]
             data_mod = data
             plot_name = ""
-            subplot_name = ""
-            subplots  = "Datei"
 
 
         for p in plots:
@@ -150,7 +150,7 @@ def niqhist_app():
 
             if not kHz:
                 data_mod = data_mod[data_mod["freqHz"] != 1999]
-            name = f"Niqhist plot von {p} {subplot_name}"
+            name = f"Niqhist plot von {p}"
             fig = plot_graphs(data_mod, name,subplots)
             con2.plotly_chart(fig)
             space, col2 = con2.columns([4, 1])
