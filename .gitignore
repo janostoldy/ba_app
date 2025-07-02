@@ -1,5 +1,5 @@
 .env
-secrets.toml
+.streamlit
 .venv
 
 __pycache__
