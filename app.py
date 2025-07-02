@@ -1,7 +1,8 @@
 import streamlit as st
-import pandas as pd
+from click import password_option
+from dotenv import load_dotenv
+import os
 
-from app_pages.analyse import analyse_app
 from src.user import User, get_known_user
 from app_pages.home import home_app
 from app_pages.DEIS import Plot_DEIS
@@ -16,6 +17,7 @@ from app_pages.pruefung import pruefung_app
 
 # streamlit run c:/projects/ba_pipline/App.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
+load_dotenv()
 
 st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
@@ -30,10 +32,12 @@ if st.session_state["authenticated"] is None:
     st.title("Login")
 
     with st.form("login_form"):
-        username = st.text_input("Benutzername")
-        password = st.text_input("Passwort", type="password")
+        #username = st.text_input("Benutzername")
+        username = os.getenv("APP_USER")
+        #password = st.text_input("Passwort", type="password")
+        password = os.getenv("APP_PASSWORD")
         known_user = get_known_user()
-        if st.form_submit_button("Anmelden"):
+        if st.form_submit_button("Anmelden") or os.getenv("APP_PASSWORD"):
             known_user_entry = known_user[
                 (known_user.name == username)
                 & (known_user.password == password)
@@ -51,7 +55,6 @@ if st.session_state["authenticated"] is None:
                 st.error(
                     "Falscher Benutzername oder Passwort. Bitte versuchen Sie es erneut."
                 )
-
 
 if st.session_state["authenticated"]:
     # Seitenleiste generieren
