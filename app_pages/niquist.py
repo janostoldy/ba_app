@@ -27,6 +27,9 @@ def points_app():
                     continue
                 for s in soc:
                     cycle_data = DB.get_eis_points(file["name"].values[0],s)
+                    cycle_data = pd.DataFrame(cycle_data)
+                    if cycle_data.empty:
+                        continue
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])
 
@@ -91,11 +94,14 @@ def niqhist_app():
         data_list = []
         for z in zelle:
             for c in cycle:
+                file = DB.get_file(c, z, "EIS")
+                if file.empty:
+                    continue
                 for s in soc:
-                    file = DB.get_file(c, z, "EIS")
-                    if file.empty:
-                        continue
                     cycle_data = DB.get_eis_plots(file["name"].values[0], s)
+                    cycle_data = pd.DataFrame(cycle_data)
+                    if cycle_data.empty:
+                        continue
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])
                     data_list.append(cycle_data)

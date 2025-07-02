@@ -31,6 +31,8 @@ def dva_app():
                 con2.divider()
                 filt_data = pd.concat([filt_data, file])
                 data, points = DB.get_dva(file["name"].values[0])
+                data = pd.DataFrame(data)
+                points = pd.DataFrame(points)
                 fig = plot_dva(data,file["name"].values[0])
                 fig = plot_dva_points(fig, data, points)
                 con2.plotly_chart(fig)

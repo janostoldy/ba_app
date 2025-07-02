@@ -25,6 +25,7 @@ def kapazitaet_app():
                 if file.empty:
                     continue
                 kap = DB.get_kapa(file["name"].values[0])
+                kap = pd.DataFrame(kap)
                 filt_data = pd.concat([filt_data, kap])
                 data = pd.concat([data, kap])
 

@@ -19,12 +19,16 @@ def pruefung_app():
             if file.empty:
                 continue
             kap = DB.get_kapa(file["name"].values[0])
+            kap = pd.DataFrame(kap)
             file = DB.get_file(cyc, z, "EIS")
             if not isinstance(file, list):
                 file = [file]
             for f in file:
                 for s in soc:
                     points = DB.get_eis_points(f["name"].values[0],s)
+                    points = pd.DataFrame(points)
+                    if points.empty:
+                        continue
                     zif = points["freq_ZIF"]
                     dat = pd.DataFrame({
                         "Zelle": z,
@@ -37,5 +41,4 @@ def pruefung_app():
                     })
                     filt_data = pd.concat([filt_data, dat], ignore_index=True)
 
-    filt_data = filt_data.dropna()
     st.dataframe(filt_data)

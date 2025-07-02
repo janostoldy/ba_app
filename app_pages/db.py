@@ -160,7 +160,7 @@ def edit_data_app():
         st.error("Keine Verbindung zur Datenbank")
         st.stop()
     con1 = st.container(border=True)
-    data = (DB.get_all_files())
+    data = DB.get_all_files()
     cycle, zelle = daten_filter(con1, data)
     typ = typ_filer(con1,data)
     data = pd.DataFrame()
@@ -168,6 +168,9 @@ def edit_data_app():
         for cyc in cycle:
             for tp in typ:
                 dat = DB.get_file(cyc, zel, tp)
+                dat = pd.DataFrame(dat)
+                if dat.empty:
+                    continue
                 data = pd.concat([data, dat], ignore_index=True)
 
     st.session_state.filter_files = data
