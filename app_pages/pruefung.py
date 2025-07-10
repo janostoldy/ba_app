@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
+
+from Classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
 
 
 def pruefung_app():
     st.title("Prüfungen")
-    DB = st.session_state["DB"]
+    DB = Database("pruefung")
     alldata = DB.get_all_files()
     con1 = st.container(border=True)
     cyclus, zellen = daten_filter(con1, alldata)

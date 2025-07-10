@@ -3,20 +3,20 @@ from streamlit import session_state
 import plotly.express as px
 import pandas as pd
 
+from Classes.datenbank import Database
 from src.filtern import daten_filter
 from src.plotting_functions import extract_sort_keys
 from src.db_help import check_db
 
 def eis_app():
     st.title("EIS Analyse")
-    DB = session_state["DB"]
-    check_db(DB)
+    DB = Database("EIS")
     con1 = st.container(border=True)
     data = DB.get_all_eis()
     cycle, zelle = daten_filter(con1, data)
 
 def Plot_EIS():
-    DB = session_state["DB"]
+    DB = Database("EIS")
     all_cycles = DB.query("SELECT DISTINCT Cycle FROM EIS")
     all_socs = DB.query("SELECT DISTINCT ROUND(QQomAh / 25.0) * 25 AS QQomAh FROM EIS")
 

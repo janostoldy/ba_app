@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
+
 
 class Database:
     def __init__(self, db_name="Formierung"):
@@ -102,7 +103,7 @@ class Database:
                  """)
             s.commit()
 
-    def df_in_DB(self, df, table_name):
+    def df_in_DB_alt(self, df, table_name):
         """
         Fügt einen DataFrame in die angegebene Tabelle der Datenbank ein (mit UPSERT-Logik für MySQL).
 
@@ -148,6 +149,15 @@ class Database:
             s.execute(sql, data_dicts)
             s.commit()
 
+    def df_in_DB(self, df, table_name):
+        url = st.secrets["url"]["url"]
+
+        # Zugriff auf die SQLAlchemy-Engine
+        engine = create_engine(url)
+
+        # DataFrame in Datenbank schreiben
+        df.to_sql(table_name, con=engine, if_exists='replace', index=False)
+
     def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
         conn = st.connection("sql", type="sql")
         sql = """
@@ -157,7 +167,7 @@ class Database:
             Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle), Typ = VALUES(Typ)"""
         values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ}
         with conn.session as s:
-            s.execute(sql, values)
+            s.execute(text(sql), values)
             s.commit()
 
 
@@ -221,7 +231,7 @@ class Database:
         sql = "UPDATE Zellen SET Cycle = :cycle WHERE id = :zelle"
         params = {"cycle": cycle, "zelle": Zelle}
         with conn.session as s:
-            s.execute(sql, params)
+            s.execute(text(sql), params)
             s.commit()
 
     def get_kapa_cycles(self):
@@ -305,3 +315,15 @@ class Database:
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
         return result
+
+    def check_con(self):
+        import time
+        try:
+            conn = st.connection("sql", type="sql")
+            start = time.time()
+            with conn.session as s:
+                s.execute(text("SELECT 1"))
+            end = time.time()
+            return round(end - start,3)
+        except Exception as e:
+            return e

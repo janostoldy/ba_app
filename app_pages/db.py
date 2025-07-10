@@ -2,17 +2,16 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+from Classes.datenbank import Database
 from src.filtern import daten_filter, typ_filer
 from src.plotting_df import highlight_status, status_func
-from src.db_help import check_db
 from Classes.datenanalyse import Analyse
 import os
 
 def add_data_app():
     st.title("Daten hinzufügen")
-    DB = st.session_state["DB"]
-    check_db(DB)
-    DA = Analyse(DB)
+    DB = Database("Add_Data")
+    DA = Analyse()
     con2 = st.container(border=True)
     con2.header("Analayze EIS Data")
     folder = con2.text_input("Daten-Ordner eingeben",
@@ -81,7 +80,7 @@ def add_data_app():
                 elif typ == "DVA-Analyse":
                     DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Kapazitäts-Messung":
-                    DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                    DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 elif typ == "Eingangsprüfung":
                     DA.analyse_eingang(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 elif typ == "Ageing":
@@ -119,9 +118,8 @@ def add_data_app():
         st.dataframe(datei_liste)
 
 @st.dialog("Löschen bestätigen",width="small")
-def file_loeschen(files):
+def file_loeschen(files,DB):
     st.write("Wollen sie die Zelle wirklich löschen?")
-    DB = st.session_state["DB"]
     st.write(files)
     if st.button("Endgültig Löschen", type="primary", use_container_width=True):
         for f in files:
@@ -129,9 +127,8 @@ def file_loeschen(files):
         st.rerun()
 
 @st.dialog("Daten bearbeiten",width="large")
-def file_bearbeiten(files):
+def file_bearbeiten(files, DB):
     st.write("Noch nicht fertig, ändert nur Files")
-    DB = st.session_state["DB"]
     alle_zellen = DB.get_all_zells()
     alle_typen = DB.get_file_typs()
     for index, row in files.iterrows():
@@ -155,7 +152,7 @@ def file_bearbeiten(files):
 
 def edit_data_app():
     st.title("Daten bearbeiten")
-    DB = st.session_state["DB"]
+    DB = Database("Edit_Data")
     if DB is None:
         st.error("Keine Verbindung zur Datenbank")
         st.stop()
@@ -188,9 +185,9 @@ def edit_data_app():
         if selected_rows.empty:
             con1.warning("Keine Daten ausgewählt!")
         else:
-            file_loeschen(selected_rows["name"])
+            file_loeschen(selected_rows["name"],DB)
     if col2.button("Bearbeiten", type="primary", use_container_width=True):
         if selected_rows.empty:
             con1.warning("Keine Daten ausgewählt!")
         else:
-            file_bearbeiten(selected_rows)
+            file_bearbeiten(selected_rows, DB)

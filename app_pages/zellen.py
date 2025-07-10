@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
+
+from Classes.datenbank import Database
 from src.db_help import check_db
 
 def add_zelle_app():
     st.title("Zellen hinzufügen")
-    DB = st.session_state["DB"]
+    DB = Database("zellen")
     check_db(DB)
     con1 = st.container(border=True)
     col1, col2, col3 = con1.columns(3)
@@ -31,17 +33,16 @@ def add_zelle_app():
 
 def show_zelle_app():
     st.title("Zellen")
-    DB = st.session_state["DB"]
+    DB = Database("zellen")
     zellen = DB.get_all_zells()
     st.write(zellen)
 
 @st.dialog("Daten Bearbeiten",width="large")
-def zellen_edit():
+def zellen_edit(DB):
     st.write("Index der Zelle aus dem Dargestellten Dataframe:")
-    DB = st.session_state["DB"]
     zellen_id = st.session_state["zelle_filter"]["zellen_id"]
     zellen_cycle= st.session_state["zelle_filter"]["zellen_cycle"]
-    #zellen = DB.get_zellen(zellen_id,zellen_cycle)
+    zellen = DB.get_zellen(zellen_id,zellen_cycle)
     num = st.number_input("Index", min_value=0, max_value=len(zellen), value=0, step=1)
 
     st.write("Daten der Zelle:")

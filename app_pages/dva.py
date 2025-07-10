@@ -5,10 +5,11 @@ import streamlit as st
 import pandas as pd
 from src.filtern import daten_filter
 from src.plotting_functions import download_button
+from Classes.datenbank import Database
 
 def dva_app():
     st.title("DVA Analysis")
-    DB = st.session_state['DB']
+    DB = Database("DVA")
     if DB is None:
         st.error("Keine Verbindung zur Datenbank")
         st.stop()

@@ -1,6 +1,8 @@
 import os
 import hashlib
 from galvani import BioLogic
+
+from Classes.datenbank import Database
 from config import sql_spalten, mes_spalten
 import pandas as pd
 import numpy as np
@@ -8,9 +10,9 @@ from scipy.signal import savgol_filter, find_peaks
 from scipy.ndimage import gaussian_filter1d
 
 class Analyse:
-    def __init__(self, datenbank):
+    def __init__(self):
         # Initialisiere die Datenbankverbindung
-        self.DB = datenbank
+        self.DB = Database("Analyse")
 
     def analyse_eingang(self, file_path, cycle, Zelle, save_data, bar):
         for data_path in file_path:
@@ -188,7 +190,7 @@ class Analyse:
         except Exception as e:
             raise Exception(f"Fehler bei DEIS-Analyse -> {e}")
 
-    def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
+    def analys_kapa_data(self,file_path, cycle, Zelle, save_data, bar):
         try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)

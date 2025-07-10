@@ -2,12 +2,13 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 from Classes.datenanalyse import Analyse
+from Classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors, download_button
 
 def points_app():
     st.title("Points")
-    DB = st.session_state["DB"]
+    DB = Database("Points")
     alldata = DB.get_all_eis()
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)
@@ -78,7 +79,7 @@ def points_app():
 
 def niqhist_app():
     st.title("Niqhist")
-    DB = st.session_state["DB"]
+    DB = Database("Niqhist")
     alldata = DB.get_all_eis()
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)
