@@ -1,5 +1,4 @@
 import streamlit as st
-from click import password_option
 from dotenv import load_dotenv
 import os
 

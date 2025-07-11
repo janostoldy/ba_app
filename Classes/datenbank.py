@@ -1,107 +1,12 @@
 import pandas as pd
 import streamlit as st
-from sqlalchemy import text, create_engine
+from sqlalchemy import text, create_engine, MetaData, Table
+from sqlalchemy.dialects.postgresql import insert
 
 
 class Database:
-    def __init__(self, db_name="Formierung"):
+    def __init__(self, db_name="Battery_Lab"):
         self.name = db_name
-
-    def create_table(self):
-        conn = st.connection("sql", type="sql")
-        with conn.session as s:
-            s.execute("""
-                CREATE TABLE IF NOT EXISTS EIS (
-                    hash VARCHAR(255) PRIMARY KEY,
-                    QAh INT,
-                    SOC INT,
-                    Calc_ImA INT,
-                    Cycle INT,
-                    EcellV DOUBLE,
-                    freqHz DOUBLE,
-                    TemperatureC DOUBLE,
-                    ZOhm DOUBLE,
-                    PhaseZdeg DOUBLE,
-                    calc_ReZOhm DOUBLE,
-                    calc_ImZOhm DOUBLE,      
-                    QchargemAh DOUBLE,
-                    CapacitymAh DOUBLE,
-                    QQomAh DOUBLE,
-                    EnergyWh DOUBLE,
-                    ImA DOUBLE,
-                    times DOUBLE,
-                    calc_times DOUBLE,
-                    Datei VARCHAR(255),
-                    Typ VARCHAR(255),
-                    Zelle VARCHAR(255)
-                )
-            """)
-            s.execute("""
-                CREATE TABLE IF NOT EXISTS EIS_Points (
-                    SoC INT,
-                    Calc_ImA INT,
-                    Im_Min REAL,
-                    Re_Min REAL,
-                    freq_Min REAL,
-                    Im_Max REAL,
-                    Re_Max REAL,
-                    freq_Max REAL,
-                    Datei VARCHAR(255)
-                )
-            """)
-            s.execute("""
-                CREATE TABLE IF NOT EXISTS Kapa (
-                    QMax REAL,
-                    Info VARCHAR(255),
-                    Datei VARCHAR(255) PRIMARY KEY
-                )
-            """)
-            s.execute("""
-                CREATE TABLE IF NOT EXISTS Files (
-                    name  VARCHAR(255) PRIMARY KEY,
-                    Datum Date,
-                    Info  VARCHAR(255),
-                    Cycle INT,
-                    Zelle VARCHAR(255)
-                )
-            """)
-            s.execute("""
-                CREATE TABLE IF NOT EXISTS DVA (              
-                    Datei VARCHAR(255),
-    ´               TemperatureC DOUBLE,
-                    QchargemAh DOUBLE,
-                    CapacitymAh DOUBLE,
-                    QQomAh DOUBLE,
-                    EnergyWh DOUBLE,
-                    ImA DOUBLE,
-                    times DOUBLE,
-                    EcellV DOUBLE,
-                    QQomAh_smoove DOUBLE,
-                    EcellV_smoove DOUBLE,
-                    calc_dV_dQ DOUBLE,
-                    PRIMARY KEY (Datei, times)
-                );
-            """)
-            s.execute("""
-                 CREATE TABLE IF NOT EXISTS DVA_Points (
-                     Datei         VARCHAR(255),
-                     Point         VARCHAR(10),
-                     Value         DOUBLE,
-                     X_Start       DOUBLE,
-                     X_END         DOUBLE,
-                     PRIMARY KEY (Datei, Point)
-                 );
-                 """)
-            s.execute("""
-                 CREATE TABLE IF NOT EXISTS Zellen
-                 (
-                     id   VARCHAR(20) PRIMARY KEY,
-                     Typ   VARCHAR(20),
-                     Cycle INT,
-                     Info VARCHAR(255)
-                 );
-                 """)
-            s.commit()
 
     def df_in_DB_alt(self, df, table_name):
         """
@@ -151,20 +56,29 @@ class Database:
 
     def df_in_DB(self, df, table_name):
         url = st.secrets["url"]["url"]
-
-        # Zugriff auf die SQLAlchemy-Engine
         engine = create_engine(url)
 
-        # DataFrame in Datenbank schreiben
-        df.to_sql(table_name, con=engine, if_exists='replace', index=False)
+        with engine.connect() as conn:
+            metadata = MetaData()
+            table = Table(table_name, metadata, autoload_with=engine)
+
+            for row in df.to_dict(orient='records'):
+                stmt = insert(table).values(**row)
+                upsert_stmt = stmt.on_conflict_do_update(
+                    index_elements=table.primary_key.columns,
+                    set_={col: stmt.excluded[col] for col in row.keys()}
+                )
+                conn.execute(upsert_stmt)
+
+            conn.commit()
 
     def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
         conn = st.connection("sql", type="sql")
         sql = """
-            INSERT INTO Files (name, Datum, Info, Cycle, Zelle, Typ)
+            INSERT INTO files (name, datum, info, cycle, zelle, typ)
             VALUES (:name, CURRENT_TIMESTAMP, :info, :cycle, :zelle, :typ)
-            ON DUPLICATE KEY UPDATE 
-            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle), Typ = VALUES(Typ)"""
+            ON CONFLICT (name) DO UPDATE SET
+            info = VALUES(Info), datum = CURRENT_TIMESTAMP, cycle = VALUES(Cycle), zelle = VALUES(Zelle), typ = VALUES(Typ)"""
         values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ}
         with conn.session as s:
             s.execute(text(sql), values)
@@ -173,45 +87,46 @@ class Database:
 
     def delete_file(self, file):
         conn = st.connection("sql", type="sql")
-        tables = ["EIS", "Files", "Kapa", "EIS_Points", "DVA", "DVA_Points"]
+        tables = ["eis", "files", "kapa", "eis_points", "dva", "dva_points"]
         with conn.session as s:
             for table in tables:
-                if table == "EIS":
-                    sql = f"DELETE FROM {table} WHERE Datei = :file"
+                if table == "eis":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
                     s.execute(sql, {"file": file})
-                elif table == "Files":
+                elif table == "files":
                     sql = f"DELETE FROM {table} WHERE name = :file"
                     s.execute(sql, {"file": file})
-                elif table == "Kapa":
-                    sql = f"DELETE FROM {table} WHERE Datei = :file"
+                elif table == "kapa":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
                     s.execute(sql, {"file": file})
-                elif table == "EIS_Points":
-                    sql = f"DELETE FROM {table} WHERE Datei = :file"
+                elif table == "eis_points":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
                     s.execute(sql, {"file": file})
-                elif table == "DVA":
-                    sql = f"DELETE FROM {table} WHERE Datei = :file"
+                elif table == "dva":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
                     s.execute(sql, {"file": file})
-                elif table == "DVA_Points":
-                    sql = f"DELETE FROM {table} WHERE Datei = :file"
+                elif table == "dva_points":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
                     s.execute(sql, {"file": file})
             s.commit()
 
-    def get_all_files(self):
+    @st.cache_data(ttl=0)
+    def get_all_files(_self):
         conn = st.connection("sql", type="sql")
-        return conn.query("SELECT * FROM Files")
+        return conn.query("SELECT * FROM files", ttl=0)
 
     def get_all_eingang(self):
         conn = st.connection("sql", type="sql")
-        sql = "SELECT * FROM Files WHERE Typ!='Ageing'"
+        sql = "SELECT * FROM files WHERE files.typ!='Ageing'"
         return conn.query(sql)
 
     def get_file(self, cycle, zelle, typ):
         conn = st.connection("sql", type="sql")
         if typ == "*":
-            sql = "SELECT * FROM Files WHERE Cycle=:cycle AND Zelle=:zelle"
+            sql = "SELECT * FROM files WHERE files.cycle=:cycle AND files.zelle=:zelle"
             values = {"cycle": cycle, "zelle": zelle}
         else:
-            sql = "SELECT * FROM Files WHERE Cycle=:cycle AND Zelle=:zelle AND Typ=:typ"
+            sql = "SELECT * FROM files WHERE files.cycle=:cycle AND files.zelle=:zelle AND files.typ=:typ"
             values = {"cycle": cycle, "zelle": zelle, "typ": typ}
         with conn.session as s:
             file = s.execute(text(sql), params=values).fetchall()
@@ -219,16 +134,16 @@ class Database:
 
     def get_file_typs(self):
         conn = st.connection("sql", type="sql")
-        sql = f"""SELECT DISTINCT Typ FROM Files """
+        sql = f"""SELECT DISTINCT typ FROM files """
         return conn.query(sql)
 
     def get_all_zells(self):
         conn = st.connection("sql", type="sql")
-        return conn.query("SELECT * FROM Zellen")
+        return conn.query("SELECT * FROM zellen")
 
     def update_zelle(self, Zelle, cycle):
         conn = st.connection("sql", type="sql")
-        sql = "UPDATE Zellen SET Cycle = :cycle WHERE id = :zelle"
+        sql = "UPDATE zellen SET zellen.cycle = :cycle WHERE zellen.id = :zelle"
         params = {"cycle": cycle, "zelle": Zelle}
         with conn.session as s:
             s.execute(text(sql), params)
@@ -236,22 +151,22 @@ class Database:
 
     def get_kapa_cycles(self):
         conn = st.connection("sql", type="sql")
-        return conn.query("SELECT DISTINCT Cycle FROM Files WHERE Typ='Kapa'")
+        return conn.query("SELECT DISTINCT cycle FROM files WHERE typ='Kapa'")
 
     def get_zell_cycle(self, zelle, Max=True):
         conn = st.connection("sql", type="sql")
-        sql = "SELECT Cycle FROM Zellen WHERE id = :zelle"
+        sql = "SELECT cycle FROM zellen WHERE id = :zelle"
         params = {"zelle": zelle}
         return conn.query(sql, params=params)
 
     def delete_zell(self, id):
         """
-            Lösche eine Zelle aus der Tabelle Zellen.
+            Lösche eine Zelle aus der Tabelle zellen.
 
             :param hash: Hash Wert der Zelle, die geupdated wird.
         """
         conn = st.connection("sql", type="sql")
-        sql = "DELETE FROM Zellen WHERE id = :id"
+        sql = "DELETE FROM zellen WHERE id = :id"
         params = {"id": id}
         with conn.session as s:
             s.execute(sql, params)
@@ -259,14 +174,14 @@ class Database:
 
     def get_all_kapa(self):
         conn = st.connection("sql", type="sql")
-        sql = "SELECT * FROM Files WHERE Typ = 'Kapa'"
+        sql = "SELECT * FROM files WHERE typ = 'Kapa'"
         return conn.query(sql)
 
     def get_kapa(self, Datei):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT Kapa.Datei, Kapa.Kapa, Kapa.Info, Files.Datum, Files.Cycle, Files.Zelle
-                     FROM Kapa INNER JOIN Files ON Kapa.Datei=Files.name
-                     WHERE Kapa.Datei = :datei"""
+        sql = """SELECT kapa.datei, kapa.kapa, kapa.info, files.datum, files.cycle, files.zelle
+                     FROM kapa INNER JOIN files ON kapa.datei=files.name
+                     WHERE kapa.datei = :datei"""
         params = {"datei": Datei}
         with conn.session as s:
            result = s.execute(text(sql), params).fetchall()
@@ -274,12 +189,12 @@ class Database:
 
     def get_all_dva(self):
         conn = st.connection("sql", type="sql")
-        sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
+        sql = "SELECT * FROM files WHERE typ = 'DVA'"
         return conn.query(sql)
     def get_dva(self, Datei):
         conn = st.connection("sql", type="sql")
-        sql1 = "SELECT * FROM DVA WHERE Datei = :datei"
-        sql2 = "SELECT * FROM DVA_Points WHERE Datei = :datei"
+        sql1 = "SELECT * FROM dva WHERE datei = :datei"
+        sql2 = "SELECT * FROM dva_points WHERE datei = :datei"
         params = {"datei": Datei}
         with conn.session as s:
             data = s.execute(text(sql1), params).fetchall()
@@ -288,19 +203,19 @@ class Database:
 
     def get_all_eis(self):
         conn = st.connection("sql", type="sql")
-        sql = "SELECT * FROM Files WHERE Typ = 'EIS'"
+        sql = "SELECT * FROM files WHERE typ = 'EIS'"
         return conn.query(sql)
 
     def get_all_eis_soc(self):
         conn = st.connection("sql", type="sql")
-        sql = ("SELECT DISTINCT SoC FROM Eis_Points ")
+        sql = ("SELECT DISTINCT SoC FROM eis_points ")
         return conn.query(sql)
 
     def get_eis_points(self, Datei, soc):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT EIS_Points.*, Files.Datum, Files.Cycle, Files.Zelle
-                      FROM EIS_Points INNER JOIN Files ON EIS_Points.Datei=Files.name 
-                      WHERE EIS_Points.Datei = :datei AND EIS_Points.SoC = :soc"""
+        sql = """SELECT eis_points.*, files.datum, files.cycle, files.zelle
+                      FROM eis_points INNER JOIN files ON eis_points.datei=files.name 
+                      WHERE eis_points.datei = :datei AND eis_points.soc = :soc"""
         params = {"datei": Datei, "soc": soc}
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
@@ -308,9 +223,9 @@ class Database:
 
     def get_eis_plots(self, Datei, soc):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT EIS.*, Files.Datum, Files.Cycle, Files.Zelle
-                      FROM EIS INNER JOIN Files ON EIS.Datei = Files.name
-                      WHERE EIS.Datei = :datei AND EIS.SoC = :soc"""
+        sql = """SELECT eis.*, files.datum, files.cycle, files.zelle
+                      FROM eis INNER JOIN files ON eis.datei = files.name
+                      WHERE eis.datei = :datei AND eis.soc = :soc"""
         params = {"datei": Datei, "soc": soc}
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()

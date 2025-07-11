@@ -16,7 +16,7 @@ def kapa_filter(con):
 def daten_filter(con, data):
     con.subheader("Filter")
     zelle = zellen_filter(con, data)
-    all_cycles = data["Cycle"].unique()
+    all_cycles = data["cycle"].unique()
     all_cycles = pd.Series(all_cycles)
     all_cycles = all_cycles.sort_values().values
     cycle_sel = con.multiselect(
@@ -31,7 +31,7 @@ def daten_filter(con, data):
     return cycle, zelle
 
 def zellen_filter(con,data):
-    alle_zellen = data["Zelle"].unique()
+    alle_zellen = data["zelle"].unique()
     zelle_sel = con.multiselect(
         "Zellen eingeben",
         alle_zellen,
@@ -57,7 +57,7 @@ def typ_filer(con,data):
     return typ
 
 def soc_filer(con,data):
-    alle_soc = data["SoC"].unique()
+    alle_soc = data["soc"].unique()
     soc_sel = con.multiselect(
         "SoC",
         alle_soc,

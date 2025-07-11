@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
+from datetime import datetime
 from Classes.datenbank import Database
 from src.filtern import daten_filter, typ_filer
 from src.plotting_df import highlight_status, status_func
@@ -30,6 +30,7 @@ def add_data_app():
 
     try:
         datei_liste = DB.get_all_files()
+        con2.info(f"Aktualisiert um {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:
         con2.error(f"Fehler beim Abrufen der Datenbank: {e}")
         datei_liste = None
@@ -90,7 +91,7 @@ def add_data_app():
                 my_bar.progress(1, text="Datenanalyse erfolgreich!")
                 my_bar.empty()
                 con2.success("Daten erfolgreich in Datenbank gespeichert.")
-                    #st.rerun()
+                datei_liste = DB.get_all_files()
         else:
             con2.warning("Keine Datein im Ordner gefunden.")
             # Liste der Unterordner im angegebenen Ordner anzeigen
@@ -114,7 +115,7 @@ def add_data_app():
     if 'datei_liste' in locals():
         #df.columns = ['Datei', 'Zyklus', 'Zelle']
         st.write("Dateien in Datenbank:")
-        datei_liste.sort_values(by=["Datum"], ascending=False, inplace=True)
+        datei_liste.sort_values(by=["datum"], ascending=False, inplace=True)
         st.dataframe(datei_liste)
 
 @st.dialog("Löschen bestätigen",width="small")
