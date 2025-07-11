@@ -86,7 +86,7 @@ def niqhist_app():
     all_soc = DB.get_all_eis_soc()
     soc = soc_filer(con1, all_soc)
     filt_data = pd.DataFrame()
-    spalten = ["Datei", "SoC", "Zelle", "Cycle", "Datum"]
+    spalten = ["datei", "soc", "zelle", "cycle", "datum"]
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
     else:
@@ -122,7 +122,7 @@ def niqhist_app():
         kHz = col2.toggle("2kHz anzeigen")
         tabels = col2.toggle("Tabellen anzeigen")
         graphs = col2.toggle("Alle Grafen in einem Plot")
-        options = ["SoC", "Cycle","Zelle"]
+        options = ["soc", "cycle","zelle"]
         subplots = col1.segmented_control("Subplots", options,
                                           help="Wähle Wert aus der in einem Diagramm angezeigt wird",
                                           default=options[1],
@@ -132,13 +132,13 @@ def niqhist_app():
                                           default=options[2],
                                           disabled=graphs)
         if not graphs:
-            if big_plot == "SoC":
+            if big_plot == "soc":
                 plots = soc
                 plot_name = "soc"
-            elif big_plot == "Zyklus":
+            elif big_plot == "cycle":
                 plots = cycle
-                plot_name = "zyklus"
-            elif big_plot == "Zelle":
+                plot_name = "cycle"
+            elif big_plot == "zelle":
                 plots = zelle
                 plot_name = "zelle"
 
