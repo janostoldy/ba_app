@@ -62,11 +62,13 @@ class Database:
             metadata = MetaData()
             table = Table(table_name, metadata, autoload_with=engine)
 
+            pk_cols = [col.name for col in table.primary_key.columns]
+
             for row in df.to_dict(orient='records'):
                 stmt = insert(table).values(**row)
                 upsert_stmt = stmt.on_conflict_do_update(
-                    index_elements=table.primary_key.columns,
-                    set_={col: stmt.excluded[col] for col in row.keys()}
+                    index_elements=pk_cols,
+                    set_={col: stmt.excluded[col] for col in row.keys() if col not in pk_cols}
                 )
                 conn.execute(upsert_stmt)
 
@@ -78,7 +80,11 @@ class Database:
             INSERT INTO files (name, datum, info, cycle, zelle, typ)
             VALUES (:name, CURRENT_TIMESTAMP, :info, :cycle, :zelle, :typ)
             ON CONFLICT (name) DO UPDATE SET
-            info = VALUES(Info), datum = CURRENT_TIMESTAMP, cycle = VALUES(Cycle), zelle = VALUES(Zelle), typ = VALUES(Typ)"""
+                datum = CURRENT_TIMESTAMP,
+                info = EXCLUDED.info,
+                cycle = EXCLUDED.cycle,
+                zelle = EXCLUDED.zelle,
+                typ = EXCLUDED.typ"""
         values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ}
         with conn.session as s:
             s.execute(text(sql), values)
@@ -92,22 +98,17 @@ class Database:
             for table in tables:
                 if table == "eis":
                     sql = f"DELETE FROM {table} WHERE datei = :file"
-                    s.execute(sql, {"file": file})
                 elif table == "files":
                     sql = f"DELETE FROM {table} WHERE name = :file"
-                    s.execute(sql, {"file": file})
                 elif table == "kapa":
                     sql = f"DELETE FROM {table} WHERE datei = :file"
-                    s.execute(sql, {"file": file})
                 elif table == "eis_points":
                     sql = f"DELETE FROM {table} WHERE datei = :file"
-                    s.execute(sql, {"file": file})
                 elif table == "dva":
                     sql = f"DELETE FROM {table} WHERE datei = :file"
-                    s.execute(sql, {"file": file})
                 elif table == "dva_points":
                     sql = f"DELETE FROM {table} WHERE datei = :file"
-                    s.execute(sql, {"file": file})
+                s.execute(text(sql), {"file": file})
             s.commit()
 
     @st.cache_data(ttl=0)
@@ -137,13 +138,14 @@ class Database:
         sql = f"""SELECT DISTINCT typ FROM files """
         return conn.query(sql)
 
-    def get_all_zells(self):
+    @st.cache_data(ttl=0)
+    def get_all_zells(_self):
         conn = st.connection("sql", type="sql")
         return conn.query("SELECT * FROM zellen")
 
     def update_zelle(self, Zelle, cycle):
         conn = st.connection("sql", type="sql")
-        sql = "UPDATE zellen SET zellen.cycle = :cycle WHERE zellen.id = :zelle"
+        sql = "UPDATE zellen SET cycle = :cycle WHERE id = :zelle"
         params = {"cycle": cycle, "zelle": Zelle}
         with conn.session as s:
             s.execute(text(sql), params)

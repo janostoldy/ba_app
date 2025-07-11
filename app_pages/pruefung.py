@@ -23,6 +23,8 @@ def pruefung_app():
             kap = DB.get_kapa(file["name"].values[0])
             kap = pd.DataFrame(kap)
             file = DB.get_file(cyc, z, "EIS")
+            if file.empty:
+                continue
             if not isinstance(file, list):
                 file = [file]
             for f in file:
@@ -36,10 +38,10 @@ def pruefung_app():
                         "Zelle": z,
                         "Zyklus": cyc,
                         "SoC": s,
-                        "Datum": f["Datum"],
-                        "Kap": kap["Kapa"].values[0],
+                        "Datum": f["datum"],
+                        "Kap": kap["kapa"].values[0],
                         "ZIF": zif,
-                        "RE_ZIF": points["Re_ZIF"]
+                        "RE_ZIF": points["re_zif"]
                     })
                     filt_data = pd.concat([filt_data, dat], ignore_index=True)
 

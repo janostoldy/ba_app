@@ -44,7 +44,7 @@ def zellen_filter(con,data):
     return zelle
 
 def typ_filer(con,data):
-    alle_typ = data["Typ"].unique()
+    alle_typ = data["typ"].unique()
     typ_sel = con.multiselect(
         "Typ",
         alle_typ,

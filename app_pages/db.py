@@ -136,12 +136,12 @@ def file_bearbeiten(files, DB):
         st.divider()
         con = st.container()
         con.write(f"Datei {row['name']} bearbeiten:")
-        info = con.text_input("Datei Infos", value=row["Info"], key=index*5)
+        info = con.text_input("Datei Infos", value=row["info"], key=index*5)
         col2, col3, col4, col5 = con.columns([3,3,2,2])
-        cycle = col2.number_input("Zyklus", value=row["Cycle"], min_value=0, step=1, key=index*5+1)
-        ind1 = np.where(alle_zellen == row["Zelle"])[0][0]
+        cycle = col2.number_input("Zyklus", value=row["cycle"], min_value=0, step=1, key=index*5+1)
+        ind1 = np.where(alle_zellen == row["zelle"])[0][0]
         zelle = col3.selectbox("Zellen eingeben", alle_zellen, index=int(ind1), key=index*5+2)
-        ind2 = np.where(alle_typen == row["Typ"])[0][0]
+        ind2 = np.where(alle_typen == row["typ"])[0][0]
         typ = col4.selectbox("Typ", alle_typen, index=int(ind2), key=index*5+3)
         col5.subheader("")
         if col5.button("Bestätigen", type="primary", use_container_width=True, key=index*5+4):
