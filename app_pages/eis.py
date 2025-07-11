@@ -1,12 +1,10 @@
 import streamlit as st
-from streamlit import session_state
 import plotly.express as px
 import pandas as pd
 
 from Classes.datenbank import Database
 from src.filtern import daten_filter
 from src.plotting_functions import extract_sort_keys
-from src.db_help import check_db
 
 def eis_app():
     st.title("EIS Analyse")
