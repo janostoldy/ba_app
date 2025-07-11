@@ -2,12 +2,10 @@ import streamlit as st
 import pandas as pd
 
 from Classes.datenbank import Database
-from src.db_help import check_db
 
 def add_zelle_app():
     st.title("Zellen hinzufügen")
     DB = Database("zellen")
-    check_db(DB)
     con1 = st.container(border=True)
     col1, col2, col3 = con1.columns(3)
     id = col1.text_input("Zelle ID", placeholder="JT_VTC_001", max_chars=20)
@@ -17,9 +15,9 @@ def add_zelle_app():
     if con1.button("Daten Hinzufügen", use_container_width=True, type="primary"):
         data = pd.DataFrame({
             "id": [id],
-            "Typ": [Typ],
-            "Cycle": [cycle],
-            "Info": [info],
+            "typ": [Typ],
+            "cycle": [cycle],
+            "info": [info],
         })
         try:
             with st.spinner("Daten hinzufügen...", show_time=True):
