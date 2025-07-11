@@ -1,308 +1,246 @@
-import mysql.connector
 import pandas as pd
-from dotenv import load_dotenv
-import os
-
-from app_pages import kapa
+import streamlit as st
+from sqlalchemy import text, create_engine, MetaData, Table
+from sqlalchemy.dialects.postgresql import insert
 
 
 class Database:
-    def __init__(self, db_name="Formierung"):
-        load_dotenv()
-        self.conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST") ,
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=db_name
-        )
-        self.cur = self.conn.cursor()
+    def __init__(self, db_name="Battery_Lab"):
+        self.name = db_name
 
-    def create_table(self):
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS EIS (
-                hash VARCHAR(255) PRIMARY KEY,
-                QAh INT,
-                SOC INT,
-                Calc_ImA INT,
-                Cycle INT,
-                EcellV DOUBLE,
-                freqHz DOUBLE,
-                TemperatureC DOUBLE,
-                ZOhm DOUBLE,
-                PhaseZdeg DOUBLE,
-                calc_ReZOhm DOUBLE,
-                calc_ImZOhm DOUBLE,      
-                QchargemAh DOUBLE,
-                CapacitymAh DOUBLE,
-                QQomAh DOUBLE,
-                EnergyWh DOUBLE,
-                ImA DOUBLE,
-                times DOUBLE,
-                calc_times DOUBLE,
-                Datei VARCHAR(255),
-                Typ VARCHAR(255),
-                Zelle VARCHAR(255)
-            )
-        """)
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS EIS_Points (
-                SoC INT,
-                Calc_ImA INT,
-                Im_Min REAL,
-                Re_Min REAL,
-                freq_Min REAL,
-                Im_Max REAL,
-                Re_Max REAL,
-                freq_Max REAL,
-                Datei VARCHAR(255)
-            )
-        """)
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Kapa (
-                QMax REAL,
-                Info VARCHAR(255),
-                Datei VARCHAR(255) PRIMARY KEY
-            )
-        """)
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS Files (
-                name  VARCHAR(255) PRIMARY KEY,
-                Datum Date,
-                Info  VARCHAR(255),
-                Cycle INT,
-                Zelle VARCHAR(255)
-            )
-        """)
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS DVA (              
-                Datei VARCHAR(255),
-´               TemperatureC DOUBLE,
-                QchargemAh DOUBLE,
-                CapacitymAh DOUBLE,
-                QQomAh DOUBLE,
-                EnergyWh DOUBLE,
-                ImA DOUBLE,
-                times DOUBLE,
-                EcellV DOUBLE,
-                QQomAh_smoove DOUBLE,
-                EcellV_smoove DOUBLE,
-                calc_dV_dQ DOUBLE,
-                PRIMARY KEY (Datei, times)
-            );
-        """)
-        self.cur.execute("""
-             CREATE TABLE IF NOT EXISTS DVA_Points (
-                 Datei         VARCHAR(255),
-                 Point         VARCHAR(10),
-                 Value         DOUBLE,
-                 X_Start       DOUBLE,
-                 X_END         DOUBLE,
-                 PRIMARY KEY (Datei, Point)
-             );
-             """)
-        self.cur.execute("""
-             CREATE TABLE IF NOT EXISTS Zellen
-             (
-                 id   VARCHAR(20) PRIMARY KEY,
-                 Typ   VARCHAR(20),
-                 Cycle INT,
-                 Info VARCHAR(255)
-             );
-             """)
-        self.conn.commit()
-
-    def df_in_DB(self, df, table_name):
+    def df_in_DB_alt(self, df, table_name):
         """
-        Fügt einen DataFrame in die angegebene Tabelle der Datenbank ein (mit UPSERT-Logik).
+        Fügt einen DataFrame in die angegebene Tabelle der Datenbank ein (mit UPSERT-Logik für MySQL).
 
         - Prüft, ob die Spalten des DataFrames mit denen der Tabelle übereinstimmen.
         - Erwartet eine Spalte 'hash' als eindeutigen Schlüssel.
         - Nutzt Batch-Insert für Effizienz.
         - Bei Konflikt (gleicher 'hash') werden die Werte aktualisiert.
-
-        :param df: DataFrame mit den einzufügenden Daten.
-        :param table_name: Name der Zieltabelle als String.
         """
-        # Prüfe Spalten der Datenbank
-        self.cur.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table_name}'")
-        db_columns = [row[0] for row in self.cur.fetchall()]
+
+        # Hol Spaltennamen aus der Datenbank (als Liste)
+        conn = st.connection("sql", type="sql")
+        result = conn.query(
+            """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = :table
+              AND TABLE_SCHEMA = 'Formierung'
+            """,
+            params={"table": table_name}
+        )
+        db_columns = [row["COLUMN_NAME"] for row in result]
+
+        # Nur Spalten einfügen, die in der Tabelle existieren
         df = df[[col for col in df.columns if col in db_columns]]
 
         if df.empty:
             return
 
-        # SQL UPSERT-Vorbereitung
         columns = df.columns.tolist()
-        placeholders = ", ".join(["%s"] * len(columns))
-        update_clause = ", ".join([f"{col}=VALUES({col})" for col in columns if col != 'hash'])
+        placeholders = ", ".join([f":{col}" for col in columns])
+        update_clause = ", ".join([f"{col} = VALUES({col})" for col in columns if col != 'hash'])
 
         sql = f"""
         INSERT INTO {table_name} ({", ".join(columns)})
         VALUES ({placeholders})
-        ON DUPLICATE KEY UPDATE 
-        {update_clause}
+        ON DUPLICATE KEY UPDATE {update_clause}
         """
 
-        # Daten als Liste von Tupeln vorbereiten
-        daten = [tuple(row) for row in df.to_numpy()]
+        # Daten als Liste von Dictionaries vorbereiten
+        data_dicts = df.to_dict(orient="records")
 
-        # Batch einfügen (deutlich schneller als einzelne Queries)
-        self.cur.executemany(sql, daten)
-        self.conn.commit()
+        with conn.session as s:
+            s.execute(sql, data_dicts)
+            s.commit()
+
+    def df_in_DB(self, df, table_name):
+        url = st.secrets["url"]["url"]
+        engine = create_engine(url)
+
+        with engine.connect() as conn:
+            metadata = MetaData()
+            table = Table(table_name, metadata, autoload_with=engine)
+
+            pk_cols = [col.name for col in table.primary_key.columns]
+
+            for row in df.to_dict(orient='records'):
+                stmt = insert(table).values(**row)
+                upsert_stmt = stmt.on_conflict_do_update(
+                    index_elements=pk_cols,
+                    set_={col: stmt.excluded[col] for col in row.keys() if col not in pk_cols}
+                )
+                conn.execute(upsert_stmt)
+
+            conn.commit()
 
     def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
+        conn = st.connection("sql", type="sql")
         sql = """
-            INSERT INTO Files (name, Datum, Info, Cycle, Zelle, Typ)
-            VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE 
-            Info = VALUES(Info), Datum = CURRENT_TIMESTAMP, Cycle = VALUES(Cycle), Zelle = VALUES(Zelle), Typ = VALUES(Typ)
-        """
-        values = (file, Info, cycle, Zelle, Typ)
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
+            INSERT INTO files (name, datum, info, cycle, zelle, typ)
+            VALUES (:name, CURRENT_TIMESTAMP, :info, :cycle, :zelle, :typ)
+            ON CONFLICT (name) DO UPDATE SET
+                datum = CURRENT_TIMESTAMP,
+                info = EXCLUDED.info,
+                cycle = EXCLUDED.cycle,
+                zelle = EXCLUDED.zelle,
+                typ = EXCLUDED.typ"""
+        values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ}
+        with conn.session as s:
+            s.execute(text(sql), values)
+            s.commit()
+
 
     def delete_file(self, file):
-        tables = ["EIS", "Files", "Kapa", "EIS_Points", "DVA", "DVA_Points"]
-        for table in tables:
-            if table == "EIS":
-                sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file,))
-            elif table == "Files":
-                sql = f"DELETE FROM {table} WHERE name=%s"
-                self.cur.execute(sql, (file,))
-            elif table == "Kapa":
-                sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file,))
-            elif table == "EIS_Points":
-                sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file,))
-            elif table == "DVA":
-                sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file,))
-            elif table == "DVA_Points":
-                sql = f"DELETE FROM {table} WHERE Datei=%s"
-                self.cur.execute(sql, (file,))
-        self.conn.commit()
+        conn = st.connection("sql", type="sql")
+        tables = ["eis", "files", "kapa", "eis_points", "dva", "dva_points"]
+        with conn.session as s:
+            for table in tables:
+                if table == "eis":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
+                elif table == "files":
+                    sql = f"DELETE FROM {table} WHERE name = :file"
+                elif table == "kapa":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
+                elif table == "eis_points":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
+                elif table == "dva":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
+                elif table == "dva_points":
+                    sql = f"DELETE FROM {table} WHERE datei = :file"
+                s.execute(text(sql), {"file": file})
+            s.commit()
 
-    def get_all_files(self):
-        return self.query("SELECT * FROM Files")
+    @st.cache_data(ttl=0)
+    def get_all_files(_self):
+        conn = st.connection("sql", type="sql")
+        return conn.query("SELECT * FROM files", ttl=0)
 
     def get_all_eingang(self):
-        sql = "SELECT * FROM Files WHERE Typ!='Ageing'"
-        return self.query(sql)
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT * FROM files WHERE files.typ!='Ageing'"
+        return conn.query(sql)
 
     def get_file(self, cycle, zelle, typ):
+        conn = st.connection("sql", type="sql")
         if typ == "*":
-            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s"""
-            values = (cycle, zelle)
+            sql = "SELECT * FROM files WHERE files.cycle=:cycle AND files.zelle=:zelle"
+            values = {"cycle": cycle, "zelle": zelle}
         else:
-            sql = f"""SELECT * FROM Files WHERE Cycle=%s AND Zelle=%s AND Typ=%s"""
-            values = (cycle, zelle, typ)
-        return self.query(sql, values)
+            sql = "SELECT * FROM files WHERE files.cycle=:cycle AND files.zelle=:zelle AND files.typ=:typ"
+            values = {"cycle": cycle, "zelle": zelle, "typ": typ}
+        with conn.session as s:
+            file = s.execute(text(sql), params=values).fetchall()
+            return pd.DataFrame(file)
 
     def get_file_typs(self):
-        sql = f"""SELECT DISTINCT Typ FROM Files """
-        return self.query(sql)
+        conn = st.connection("sql", type="sql")
+        sql = f"""SELECT DISTINCT typ FROM files """
+        return conn.query(sql)
 
-    def get_all_zells(self):
-        return self.query("SELECT * FROM Zellen")
+    @st.cache_data(ttl=0)
+    def get_all_zells(_self):
+        conn = st.connection("sql", type="sql")
+        return conn.query("SELECT * FROM zellen")
 
     def update_zelle(self, Zelle, cycle):
-        sql = f"""UPDATE Zellen SET Cycle=%s WHERE id=%s"""
-        params = (cycle, Zelle)
-        self.cur.execute(sql, params)
-        self.conn.commit()
+        conn = st.connection("sql", type="sql")
+        sql = "UPDATE zellen SET cycle = :cycle WHERE id = :zelle"
+        params = {"cycle": cycle, "zelle": Zelle}
+        with conn.session as s:
+            s.execute(text(sql), params)
+            s.commit()
 
     def get_kapa_cycles(self):
-        return self.query("SELECT DISTINCT Cycle FROM Files WHERE Typ='Kapa'")
+        conn = st.connection("sql", type="sql")
+        return conn.query("SELECT DISTINCT cycle FROM files WHERE typ='Kapa'")
 
     def get_zell_cycle(self, zelle, Max=True):
-        return self.query("SELECT Cycle FROM Zellen WHERE id = %s", (zelle,))
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT cycle FROM zellen WHERE id = :zelle"
+        params = {"zelle": zelle}
+        return conn.query(sql, params=params)
 
     def delete_zell(self, id):
         """
-            Lösche eine Zelle aus der Tabelle Zellen.
+            Lösche eine Zelle aus der Tabelle zellen.
 
             :param hash: Hash Wert der Zelle, die geupdated wird.
         """
-        sql = """
-        DELETE FROM Zelle
-        WHERE id = %s
-        """
-        values = (id,)
-        try:
-            self.cur.execute(sql, values)
-            self.conn.commit()
-            return None
-        except Exception as e:
-            return e
+        conn = st.connection("sql", type="sql")
+        sql = "DELETE FROM zellen WHERE id = :id"
+        params = {"id": id}
+        with conn.session as s:
+            s.execute(sql, params)
+            s.commit()
 
     def get_all_kapa(self):
-        sql = "SELECT * FROM Files WHERE Typ = 'Kapa'"
-        return self.query(sql)
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT * FROM files WHERE typ = 'Kapa'"
+        return conn.query(sql)
 
     def get_kapa(self, Datei):
-        sql = """SELECT Kapa.Datei, Kapa.Kapa, Kapa.Info, Files.Datum, Files.Cycle, Files.Zelle 
-                 FROM Kapa INNER JOIN Files ON Kapa.Datei=Files.name 
-                 WHERE Datei=%s"""
-        params = (Datei,)
-        return self.query(sql, params=params)
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT kapa.datei, kapa.kapa, kapa.info, files.datum, files.cycle, files.zelle
+                     FROM kapa INNER JOIN files ON kapa.datei=files.name
+                     WHERE kapa.datei = :datei"""
+        params = {"datei": Datei}
+        with conn.session as s:
+           result = s.execute(text(sql), params).fetchall()
+        return result
 
     def get_all_dva(self):
-        sql = "SELECT * FROM Files WHERE Typ = 'DVA'"
-        return self.query(sql)
-
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT * FROM files WHERE typ = 'DVA'"
+        return conn.query(sql)
     def get_dva(self, Datei):
-        params = (Datei,)
-        sql = "SELECT * FROM DVA WHERE Datei = %s"
-        data = self.query(sql, params=params)
-        sql = "SELECT * FROM DVA_Points WHERE Datei = %s"
-        points = self.query(sql, params=params)
+        conn = st.connection("sql", type="sql")
+        sql1 = "SELECT * FROM dva WHERE datei = :datei"
+        sql2 = "SELECT * FROM dva_points WHERE datei = :datei"
+        params = {"datei": Datei}
+        with conn.session as s:
+            data = s.execute(text(sql1), params).fetchall()
+            points = s.execute(text(sql2), params).fetchall()
         return data, points
 
     def get_all_eis(self):
-        sql = "SELECT * FROM Files WHERE Typ = 'EIS'"
-        return self.query(sql)
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT * FROM files WHERE typ = 'EIS'"
+        return conn.query(sql)
 
     def get_all_eis_soc(self):
-        sql = ("SELECT DISTINCT SoC FROM Eis_Points ")
-        return self.query(sql)
+        conn = st.connection("sql", type="sql")
+        sql = ("SELECT DISTINCT SoC FROM eis_points ")
+        return conn.query(sql)
 
     def get_eis_points(self, Datei, soc):
-        params = (Datei,soc)
-        sql = """SELECT EIS_Points.*, Files.Datum, Files.Cycle, Files.Zelle
-                 FROM EIS_Points INNER JOIN Files ON EIS_Points.Datei=Files.name 
-                 WHERE EIS_Points.Datei = %s AND EIS_Points.SoC = %s"""
-        return self.query(sql, params=params)
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT eis_points.*, files.datum, files.cycle, files.zelle
+                      FROM eis_points INNER JOIN files ON eis_points.datei=files.name 
+                      WHERE eis_points.datei = :datei AND eis_points.soc = :soc"""
+        params = {"datei": Datei, "soc": soc}
+        with conn.session as s:
+            result = s.execute(text(sql), params).fetchall()
+        return result
 
     def get_eis_plots(self, Datei, soc):
-        params = (Datei,soc)
-        sql = """SELECT EIS.*, Files.Datum, Files.Cycle, Files.Zelle
-                 FROM EIS INNER JOIN Files ON EIS.Datei = Files.name
-                 WHERE EIS.Datei = %s AND EIS.SoC = %s"""
-        return self.query(sql, params=params)
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT eis.*, files.datum, files.cycle, files.zelle
+                      FROM eis INNER JOIN files ON eis.datei = files.name
+                      WHERE eis.datei = :datei AND eis.soc = :soc"""
+        params = {"datei": Datei, "soc": soc}
+        with conn.session as s:
+            result = s.execute(text(sql), params).fetchall()
+        return result
 
-
-    def query(self, sql_query, params=None):
-        """
-        Führt eine SQL-Abfrage aus und gibt die Ergebnisse zurück.
-
-        :param sql_query: Die SQL-Abfrage als String.
-        :param params: Parameter für die Abfrage, optional.
-        :return: Ergebnisse der Abfrage als Liste von Tupeln.
-        """
-        self.cur.execute(sql_query, params)
-        data = self.cur.fetchall()
+    def check_con(self):
+        import time
         try:
-            columns = [desc[0] for desc in self.cur.description]
-            df = pd.DataFrame(data, columns=columns)
-            return df
-        except Exception:
-            return data
-
-    def close(self):
-        self.conn.close()
+            conn = st.connection("sql", type="sql")
+            start = time.time()
+            with conn.session as s:
+                s.execute(text("SELECT 1"))
+            end = time.time()
+            return round(end - start,3)
+        except Exception as e:
+            return e

@@ -1,15 +1,17 @@
-from galvani import BioLogic
 import pandas as pd
-import plotly.graph_objects as go
+from sqlalchemy import create_engine
 
+# Verbindungen definieren
+mysql_engine = create_engine("mysql+pymysql://root:Schildkr0te@localhost:3306/Formierung")
+postgres_engine = create_engine("postgresql://postgres:Schildkr0te@localhost:5432/Battary_DB")
 
-mpr_file = BioLogic.MPRfile("00_Test_Data/test_cycle.mpr")
-df = pd.DataFrame(mpr_file.data)
+# Tabellenname, die du migrieren willst
+table_name = "Zellen"
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=df['time/s'], y=df['flags'], mode='lines', name='flags'))
-fig.add_trace(go.Scatter(x=df['time/s'], y=df['(Q-Qo)/mA.h'], mode='lines', name='(Q-Qo)/mA.h'))
-fig.update_layout(title='flags und Q-Qo über der Zeit', xaxis_title='Zeit (s)', yaxis_title='Wert')
-fig.show()
+# Tabelle aus MySQL lesen
+df = pd.read_sql_table(table_name, con=mysql_engine)
 
-print(df)
+# In PostgreSQL schreiben (append oder replace)
+df.to_sql(table_name, con=postgres_engine, if_exists="replace", index=False)
+
+print(f"✅ Tabelle '{table_name}' erfolgreich übertragen.")

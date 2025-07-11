@@ -15,7 +15,7 @@ try:
 
 finally:
     try:
-        DB.close()
+
         print('[Info] Closed Connection')
     except Exception as e:
         print(f'[Error] Failed to close connection: {e}')
