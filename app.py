@@ -1,11 +1,9 @@
 import streamlit as st
-from click import password_option
 from dotenv import load_dotenv
 import os
 
 from src.user import User, get_known_user
 from app_pages.home import home_app
-from app_pages.DEIS import Plot_DEIS
 from app_pages.eis import eis_app
 from app_pages.niquist import points_app, niqhist_app
 from app_pages.db import add_data_app, edit_data_app
@@ -65,7 +63,6 @@ if st.session_state["authenticated"]:
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
-    deis_page = st.Page(Plot_DEIS, title="DEIS", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
     user = st.session_state["User"]
     if user.role == "user":
@@ -81,7 +78,6 @@ if st.session_state["authenticated"]:
                     niqhist_page,
                     dva_page,
                     eis_page,
-                    deis_page,
                     points_page,
                 ],
             }
@@ -105,7 +101,6 @@ if st.session_state["authenticated"]:
                     niqhist_page,
                     dva_page,
                     eis_page,
-                    deis_page,
                     points_page,
                 ],
             }

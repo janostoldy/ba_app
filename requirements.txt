@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+sqlalchemy
+pymysql
+python-dotenv
+plotly
+scipy
+galvani
+kaleido

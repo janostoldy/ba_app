@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from src.db_help import check_db
+
+from Classes.datenbank import Database
 
 def add_zelle_app():
     st.title("Zellen hinzufügen")
-    DB = st.session_state["DB"]
-    check_db(DB)
+    DB = Database("zellen")
     con1 = st.container(border=True)
     col1, col2, col3 = con1.columns(3)
     id = col1.text_input("Zelle ID", placeholder="JT_VTC_001", max_chars=20)
@@ -15,9 +15,9 @@ def add_zelle_app():
     if con1.button("Daten Hinzufügen", use_container_width=True, type="primary"):
         data = pd.DataFrame({
             "id": [id],
-            "Typ": [Typ],
-            "Cycle": [cycle],
-            "Info": [info],
+            "typ": [Typ],
+            "cycle": [cycle],
+            "info": [info],
         })
         try:
             with st.spinner("Daten hinzufügen...", show_time=True):
@@ -31,17 +31,16 @@ def add_zelle_app():
 
 def show_zelle_app():
     st.title("Zellen")
-    DB = st.session_state["DB"]
+    DB = Database("zellen")
     zellen = DB.get_all_zells()
     st.write(zellen)
 
 @st.dialog("Daten Bearbeiten",width="large")
-def zellen_edit():
+def zellen_edit(DB):
     st.write("Index der Zelle aus dem Dargestellten Dataframe:")
-    DB = st.session_state["DB"]
     zellen_id = st.session_state["zelle_filter"]["zellen_id"]
     zellen_cycle= st.session_state["zelle_filter"]["zellen_cycle"]
-    #zellen = DB.get_zellen(zellen_id,zellen_cycle)
+    zellen = DB.get_zellen(zellen_id,zellen_cycle)
     num = st.number_input("Index", min_value=0, max_value=len(zellen), value=0, step=1)
 
     st.write("Daten der Zelle:")

@@ -3,13 +3,12 @@ import streamlit as st
 import pandas as pd
 import io
 from src.filtern import daten_filter
-from src.plotting_functions import colors
-from src.db_help import check_db
+from src.plotting_functions import colors, download_button
+from Classes.datenbank import Database
 
 def kapazitaet_app():
     st.title("Kapazität")
-    DB = st.session_state["DB"]
-    check_db(DB)
+    DB = Database("Kapazitaet")
     alldata = DB.get_all_kapa()
     con0 = st.container(border=True)
     cycle, zelle = daten_filter(con0, alldata)
@@ -19,12 +18,10 @@ def kapazitaet_app():
     else:
         con1 = st.container(border=False)
         data = pd.DataFrame()
-        for z in zelle:
-            for c in cycle:
-                file = DB.get_file(c, z,"Kapa")
-                if file.empty:
-                    continue
-                kap = DB.get_kapa(file["name"].values[0])
+        for d in alldata.itertuples(index=False):
+            if d.cycle in cycle and d.zelle in zelle:
+                kap = DB.get_kapa(d.name)
+                kap = pd.DataFrame(kap)
                 filt_data = pd.concat([filt_data, kap])
                 data = pd.concat([data, kap])
 
@@ -37,12 +34,12 @@ def kapazitaet_app():
             plots = ["Allen Zellen"]
             plot_name = ""
             data_mod = data
-            subplots = "Zelle"
+            subplots = "zelle"
             einheit = "mAh"
         else:
             plots = zelle
-            plot_name = "Zelle"
-            subplots = "Zelle"
+            plot_name = "zelle"
+            subplots = "zelle"
             einheit = "mAh"
 
         key = 0
@@ -72,32 +69,18 @@ def kapazitaet_app():
                 )
             )
 
-            # --- Export als SVG ---
-            # Temporären Buffer für SVG-Datei anlegen
-            svg_buffer = io.BytesIO()
-            fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
-            svg_data = svg_buffer.getvalue()
-            space, col2 = con2.columns([4, 1])
-            col2.download_button(
-                label="Download als SVG",
-                data=svg_data,
-                file_name="plot.svg",
-                mime="image/svg+xml",
-                key=key,
-                use_container_width=True
-            )
+            download_button(con2, fig, key)
             key += 1
 
             con2.dataframe(data_mod)
 
 
 def plot_kapa(data,name,subplots):
-    fig = px.line(data,
-                  x="Cycle",
-                  y="Kapa",
+    fig = px.scatter(data,
+                  x="cycle",
+                  y="kapa",
                   color=subplots,
                   title=name,
-                  markers=True,
                   color_discrete_sequence=list(colors.values())
                   )
     fig.update_layout(
