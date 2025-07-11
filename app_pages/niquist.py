@@ -15,7 +15,7 @@ def points_app():
     all_soc = DB.get_all_eis_soc()
     soc = soc_filer(con1, all_soc)
     filt_data = pd.DataFrame()
-    spalten = ["Datei", "SoC", "Zelle", "Cycle", "Datum"]
+    spalten = ["datei", "soc", "zelle", "cycle", "datum"]
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
     else:
@@ -42,25 +42,25 @@ def points_app():
         col1, col2 = con1.columns(2)
         options = ["SoC", "Zelle"]
         selected = col1.segmented_control("Subplots",options,help="Wähle Wert aus der in einem Diagramm angezeigt wird",default=options[1])
-        options = [col for col in data.columns if col not in ["Datei", "Cycle", "Zelle", "Datum", "SoC"]]
+        options = [col for col in data.columns if col not in ["datei", "cycle", "zelle", "datum", "soc"]]
         y_values = col2.selectbox("Y-Werte", options)
         graphs = col2.toggle("Alle Grafen in einem Plot")
         if not graphs:
             if selected == "SoC":
                 plots = soc
-                plot_name = "SoC"
-                subplots = "Zelle"
+                plot_name = "soc"
+                subplots = "zelle"
                 einheit = "mAh"
             else:
                 plots = zelle
-                plot_name = "Zelle"
-                subplots = "SoC"
+                plot_name = "zelle"
+                subplots = "soc"
                 einheit = ""
         else:
             plots = ["allen ausgewählten Daten"]
             plot_name = ""
             data_mod = data
-            subplots = "Zelle"
+            subplots = "zelle"
             einheit = ""
 
         for p in plots:
@@ -134,13 +134,13 @@ def niqhist_app():
         if not graphs:
             if big_plot == "SoC":
                 plots = soc
-                plot_name = "SoC"
+                plot_name = "soc"
             elif big_plot == "Zyklus":
                 plots = cycle
-                plot_name = "Zyklus"
+                plot_name = "zyklus"
             elif big_plot == "Zelle":
                 plots = zelle
-                plot_name = "Zelle"
+                plot_name = "zelle"
 
         else:
             plots = ["allen ausgewählten Daten"]
@@ -153,10 +153,12 @@ def niqhist_app():
             con2.divider()
             if not graphs:
                 data_mod = data[data[plot_name] == p]
-            data_mod.sort_values(by=["Datei","freqHz"], inplace=True)
+                if data_mod.empty:
+                    continue
+            data_mod.sort_values(by=["datei","freqhz"], inplace=True)
 
             if not kHz:
-                data_mod = data_mod[data_mod["freqHz"] != 1999]
+                data_mod = data_mod[data_mod["freqhz"] != 1999]
             name = f"Niqhist plot von {p}"
             fig = plot_graphs(data_mod, name,subplots)
             con2.plotly_chart(fig)
@@ -168,7 +170,7 @@ def niqhist_app():
 
 def plot_points(data, name, y_values, subplots):
     fig = px.line(data,
-                  x="Cycle",
+                  x="cycle",
                   y=y_values,
                   color=subplots,
                   title=f"{y_values} von {name}",
@@ -184,13 +186,13 @@ def plot_points(data, name, y_values, subplots):
 
 def plot_graphs(data, name, subplots):
     fig = px.line(data,
-                  x="calc_ReZOhm",
-                  y="calc_ImZOhm",
+                  x="calc_rezohm",
+                  y="calc_imzohm",
                   color=subplots,
                   title=name,
                   markers=True,
                   color_discrete_sequence=list(colors.values()),
-                  hover_data="freqHz"
+                  hover_data="freqhz"
                   )
     fig.update_layout(
         yaxis_title='ImZ (Ohm)',
