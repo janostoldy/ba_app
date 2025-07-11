@@ -1,0 +1,5 @@
+docker run --name BatteryLab \
+  -e POSTGRES_PASSWORD=Schildkr0te \
+  -e POSTGRES_DB=Battary_DB \
+  -p 5432:5432 \
+  -d postgres
