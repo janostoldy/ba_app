@@ -1,4 +1,3 @@
-import io
 
 import plotly.express as px
 import streamlit as st
@@ -38,7 +37,7 @@ def dva_app():
                 fig = plot_dva_points(fig, data, points)
                 con2.plotly_chart(fig)
                 space1, col1, col2 = con2.columns([1, 20, 3])
-                df_points = pd.DataFrame(points["Value"].values.reshape(1, -1), columns=points["Point"].values)
+                df_points = pd.DataFrame(points["value"].values.reshape(1, -1), columns=points["point"].values)
                 col1.dataframe(df_points, hide_index=True)
                 download_button(col2,fig,key)
                 key += 1
@@ -50,8 +49,8 @@ def dva_app():
 def plot_dva(Data, name):
     # Plot erstellen
     fig = px.line(Data,
-                  x='QQomAh_smoove',
-                  y='calc_dV_dQ',
+                  x='qqomah_smoove',
+                  y='calc_dv_dq',
                   title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'},
                   hover_data=[Data.index],)
@@ -66,36 +65,36 @@ def plot_dva(Data, name):
 
 def plot_dva_points(fig, calc_Data, calc_Points):
     for _, row in calc_Points.iterrows():
-        if not row['Point'] == 'Q0':
-            if row['Point'] in ['Q2', 'Q3']:
+        if not row['point'] == 'Q0':
+            if row['point'] in ['Q2', 'Q3']:
                 try:
-                    y_value = calc_Data.loc[calc_Data['QQomAh_smoove'] == row['X_Start'], 'calc_dV_dQ'].values[0]
+                    y_value = calc_Data.loc[calc_Data['qqomah_smoove'] == row['x_start'], 'calc_dv_dq'].values[0]
                 except:
-                    y_value = calc_Data.loc[0, 'calc_dV_dQ']
-                min_value = min(calc_Data['calc_dV_dQ'])
+                    y_value = calc_Data.loc[0, 'calc_dv_dq']
+                min_value = min(calc_Data['calc_dv_dq'])
                 fig.add_shape(
                     type="line",
-                    x0=row['X_Start'],
-                    x1=row['X_Start'],
+                    x0=row['x_start'],
+                    x1=row['x_start'],
                     y0=min_value,
                     y1=y_value*1.1,
                     line=dict(color="#64a0c8", width=2)
                 )
             else:
-                y_value = calc_Data.loc[calc_Data['QQomAh_smoove'] == row['X_End'], 'calc_dV_dQ'].values[0]
+                y_value = calc_Data.loc[calc_Data['qqomah_smoove'] == row['x_end'], 'calc_dv_dq'].values[0]
             fig.add_shape(
                 type="line",
-                x0=row['X_Start'],
-                x1=row['X_End'],
+                x0=row['x_start'],
+                x1=row['x_end'],
                 y0 = y_value,
                 y1 = y_value,
                 line=dict(color="#64a0c8", width=2)
             )
 
             fig.add_annotation(
-                x=(row['X_Start'] + row['X_End']) / 2,
+                x=(row['x_start'] + row['x_end']) / 2,
                 y=y_value*1.05,
-                text=row['Point'],
+                text=row['point'],
                 showarrow=False,
                 font=dict(color="#64a0c8", size=12)
             )
