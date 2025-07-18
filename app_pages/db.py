@@ -81,7 +81,7 @@ def add_data_app():
                 elif typ == "DVA-Analyse":
                     DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Kapazitäts-Messung":
-                    DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
+                    DA.analys_kapa_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Eingangsprüfung":
                     DA.analyse_eingang(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 elif typ == "Ageing":

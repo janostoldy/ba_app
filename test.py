@@ -1,17 +1,9 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from config import mes_spalten
+from galvani import BioLogic
 
-# Verbindungen definieren
-mysql_engine = create_engine("mysql+pymysql://root:Schildkr0te@localhost:3306/Formierung")
-postgres_engine = create_engine("postgresql://postgres:Schildkr0te@localhost:5432/Battary_DB")
+mpr_file = BioLogic.MPRfile("/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/BA_Toldy/Charakterisierung/JT_VTC_001/JT_VTC_001_Characterization_02_MB_CA1.mpr")
+df = pd.DataFrame(mpr_file.data)
+dva_raw = df.rename(columns=mes_spalten)
 
-# Tabellenname, die du migrieren willst
-table_name = "Zellen"
-
-# Tabelle aus MySQL lesen
-df = pd.read_sql_table(table_name, con=mysql_engine)
-
-# In PostgreSQL schreiben (append oder replace)
-df.to_sql(table_name, con=postgres_engine, if_exists="replace", index=False)
-
-print(f"✅ Tabelle '{table_name}' erfolgreich übertragen.")
+print(dva_raw.head)

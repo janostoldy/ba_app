@@ -27,6 +27,7 @@ mes_spalten = {
     "I Range": "i_range",
     "time/s": "times",
     "control/V/mA": "control_v_ma",
+    "control/mA": "control_ma",
     "Ewe/V": "ecellv",
     "I/mA": "ima",
     "dq/mA.h": "qah",

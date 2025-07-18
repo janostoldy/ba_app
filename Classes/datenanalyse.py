@@ -185,7 +185,7 @@ class Analyse:
         except Exception as e:
             raise Exception(f"Fehler bei DEIS-Analyse -> {e}")
 
-    def analys_kapa_data(self,file_path, cycle, Zelle, save_data, bar):
+    def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
         try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
@@ -207,7 +207,7 @@ class Analyse:
             raise Exception(f"Fehler bei Kapazitäts-Analyse -> {e}")
 
     def analys_OCV_data(self, file_path, cycle, Zelle, save_data):
-        try:
+        #try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
                 mpr_file = BioLogic.MPRfile(data_path)
@@ -253,8 +253,8 @@ class Analyse:
                     self.DB.df_in_DB(df=dva_edit, table_name='dva')
                     self.DB.df_in_DB(df=calc_Points, table_name='dva_points')
                     self.DB.insert_file(data_name, cycle, "DVA Analyse", Zelle, "DVA")
-        except Exception as e:
-            raise Exception(f"Fehler bei OCV-Analyse -> {e}")
+        #except Exception as e:
+            #raise Exception(f"Fehler bei OCV-Analyse -> {e}")
 
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:

@@ -1,5 +1,17 @@
-docker run --name BatteryLab \
-  -e POSTGRES_PASSWORD=Schildkr0te \
-  -e POSTGRES_DB=Battary_DB \
-  -p 5432:5432 \
-  -d postgres
+# Im Ordnern
+cd batterylab
+docker compose up -d
+docker exec -it BatteryLab bash
+    #Im Container
+    psql -U postgres -d Battary_DB
+        #In Datenbank
+        \dt
+
+        #Datenbank verlassen
+        \q
+    #Container verlassen
+    ^P ^Q
+
+#Backup
+pg_dump -U postgres -d Battary_DB -F c -f /var/lib/postgresql/data/battary_db_backup.dump
+docker cp BatteryLab:/var/lib/postgresql/data/battary_db_backup.dump .

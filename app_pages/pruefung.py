@@ -33,7 +33,7 @@ def pruefung_app():
                     points = pd.DataFrame(points)
                     if points.empty:
                         continue
-                    zif = points["freq_ZIF"]
+                    zif = points["freq_zif"]
                     dat = pd.DataFrame({
                         "Zelle": z,
                         "Zyklus": cyc,

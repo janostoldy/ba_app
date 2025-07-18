@@ -64,11 +64,16 @@ class Database:
 
             pk_cols = [col.name for col in table.primary_key.columns]
 
+            valid_columns = set([col.name for col in table.columns])
+            df = df[[col for col in df.columns if col in valid_columns]]
+
             for row in df.to_dict(orient='records'):
                 stmt = insert(table).values(**row)
                 upsert_stmt = stmt.on_conflict_do_update(
                     index_elements=pk_cols,
-                    set_={col: stmt.excluded[col] for col in row.keys() if col not in pk_cols}
+                    set_={col: stmt.excluded[col]
+                          for col in row.keys()
+                          if col not in pk_cols and col in stmt.excluded}
                 )
                 conn.execute(upsert_stmt)
 
