@@ -6,8 +6,8 @@ import pandas as pd
 from config import mes_spalten
 from src.plotting_functions import get_linestyles
 
-def analyse_app():
-    st.title("Daten Analysieren")
+def biologic_app():
+    st.title("Biologic Ergebnisse")
     con1 = st.container(border=True)
     uploaded_file = con1.file_uploader("Datei Auswählen", type=["mpr","csv"])
     if uploaded_file is not None:

@@ -6,7 +6,7 @@ def safion_app():
     st.title("Safion Ergebnisse")
     con1 = st.container(border=True)
     dic = get_data(con1)
-    if dic is not None:
+    if len(dic) != 0:
         st.subheader("Plot")
 
         sel = st.selectbox("Daten wählen",dic.keys(),index=None)
@@ -86,6 +86,3 @@ def get_data(con):
                 "Daten": reshaped_df
             }
         return dic
-
-
-safion_app()

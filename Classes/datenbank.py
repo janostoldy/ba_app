@@ -239,13 +239,9 @@ class Database:
         return result
 
     def check_con(self):
-        import time
-        try:
-            conn = st.connection("sql", type="sql")
-            start = time.time()
-            with conn.session as s:
-                s.execute(text("SELECT 1"))
-            end = time.time()
-            return round(end - start,3)
-        except Exception as e:
-            return e
+        conn = st.connection("sql", type="sql")
+        start = time.time()
+        with conn.session as s:
+            s.execute(text("SELECT 1"))
+        end = time.time()
+        return round(end - start,3)
