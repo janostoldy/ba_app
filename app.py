@@ -31,10 +31,11 @@ if st.session_state["authenticated"] is None:
     st.title("Login")
 
     with st.form("login_form"):
-        #username = st.text_input("Benutzername")
         username = os.getenv("APP_USER")
-        #password = st.text_input("Passwort", type="password")
         password = os.getenv("APP_PASSWORD")
+        if username is None:
+            username = st.text_input("Benutzername")
+            password = st.text_input("Passwort", type="password")
         known_user = get_known_user()
         if st.form_submit_button("Anmelden") or os.getenv("APP_PASSWORD"):
             known_user_entry = known_user[
