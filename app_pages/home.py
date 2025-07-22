@@ -8,10 +8,10 @@ def home_app():
     con1 = st.container(border=False)
     #Datenbank Testen
     DB = Database("Home")
-    time = DB.check_con()
-    if time is not None:
+    try:
+        time = DB.check_con()
         st.success(f"Datenbank verbunden -> Antwortzeit {time} s")
-    else:
-        st.error("Datenbank nicht verbunden")
+    except Exception as e:
+        st.error(f"Datenbank nicht verbunden -> {e}")
 
 

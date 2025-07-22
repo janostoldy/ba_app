@@ -8,12 +8,13 @@ from app_pages.eis import eis_app
 from app_pages.niquist import points_app, niqhist_app
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.kapa import kapazitaet_app
-from app_pages.analyse import analyse_app
+from app_pages.biologic import biologic_app
 from app_pages.dva import dva_app
 from app_pages.zellen import add_zelle_app, show_zelle_app
 from app_pages.pruefung import pruefung_app
+from app_pages.safion import safion_app
 
-# streamlit run c:/projects/ba_pipline/App.py
+# streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
 load_dotenv()
 
@@ -57,21 +58,26 @@ if st.session_state["authenticated"] is None:
 if st.session_state["authenticated"]:
     # Seitenleiste generieren
     home_page = st.Page(home_app, title="Home", default=True, icon="👋")
-    analyse_page = st.Page(analyse_app, title="Analyse", icon="📈")
+    biologic_page = st.Page(biologic_app, title="Biologic", icon="📈")
+    safion_page = st.Page(safion_app, title="Safion", icon="📈")
     eingang_page = st.Page(pruefung_app, title="Prüfungen", icon="📥")
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
+
     user = st.session_state["User"]
     if user.role == "user":
         zellen_page = st.Page(show_zelle_app, title="Zellen", icon="🔋")
         pg = st.navigation(
             {
                 "Start": [home_page],
+                "Analysen": [
+                    biologic_page,
+                    safion_page
+                ],
                 "Anwendungen": [
-                    analyse_page,
                     zellen_page,
                     eingang_page,
                     kapa_page,
@@ -94,8 +100,11 @@ if st.session_state["authenticated"]:
                     delete_data_page,
                     zelle_page,
                 ],
+                "Analysen": [
+                    biologic_page,
+                    safion_page
+                ],
                 "Anwendungen": [
-                    analyse_page,
                     eingang_page,
                     kapa_page,
                     niqhist_page,
