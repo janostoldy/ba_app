@@ -15,7 +15,7 @@ from app_pages.pruefung import pruefung_app
 from app_pages.safion import safion_app
 
 # streamlit run c:/projects/ba_pipline/app.py
-# streamlit run /Users/janostoldy/Documents/git_projecte/ba_pipline/app.py
+# streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
 load_dotenv()
 
 st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
