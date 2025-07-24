@@ -1,6 +1,7 @@
 import os
 import hashlib
 from galvani import BioLogic
+import streamlit as st
 
 from Classes.datenbank import Database
 from config import mes_spalten
@@ -141,6 +142,9 @@ class Analyse:
                     eis.loc[:, 'calc_times'] = eis['times'] - start_time.iloc[i]
                     eis.loc[:, 'hash'] = eis_hashes
                     eis.loc[:, 'datei'] = data_name
+                    eis.loc[:, 'typ'] = 'eis'
+
+                self.analyze_DEIS_data(df, data_name, cycle, Zelle, save_data)
 
                 self.calc_niquist_data(eis_values, save_data)
                 if save_data:
@@ -151,16 +155,14 @@ class Analyse:
         except Exception as e:
             raise Exception(f"Fehler bei EIS-Analyse -> {e}")
 
-    def analyze_DEIS_data(self, df, data_name, cycle, Zelle, save_data, eis_values):
+    def analyze_DEIS_data(self, df, data_name, cycle, Zelle, save_data):
         try:
-            deis_values = df[((df['flags'] == 117) | (df['flags'] == 245)) & (df['freqhz'] > 0)].copy()
-            if len(deis_values) == 0:
-                deis_values = df[((df['flags'] == 101) | (df['flags'] == 229)) & (df['freqhz'] > 0)].copy()
+            deis_values = df[(df['flags'].isin([117, 101, 229, 245])) & (df['freqhz'] > 0)].copy()
             if len(deis_values) == 0:
                 raise Exception('No DEIS data found in file or wrong flags.')
             deis_indices = deis_values.index
-            deis_soc = round(df.QQomAh[deis_indices - 1] / 125) * 125
-            deis_ImA = df.ImA[deis_indices - 1]
+            deis_soc = round(df.qqomah[deis_indices - 1] / 125) * 125
+            deis_ImA = df.ima[deis_indices - 1]
             deis_Calc_ImA = round(deis_ImA / 1250) * 1250
             deis_freq = deis_values['freqhz']
             deis_hashes = [self.create_hash('deis', freq, cycle, soc, ima, Zelle) for soc, ima, freq in zip(deis_soc,deis_Calc_ImA, deis_freq)]
@@ -179,11 +181,12 @@ class Analyse:
             deis_values.loc[:, 'calc_times'] = 0
             deis_values.loc[:, 'hash'] = deis_hashes
             deis_values.loc[:, 'datei'] = os.path.basename(data_name)
+            deis_values.loc[:, 'typ'] = "deis"
 
             if save_data:
                 self.DB.df_in_DB(df=deis_values, table_name='eis')
         except Exception as e:
-            raise Exception(f"Fehler bei DEIS-Analyse -> {e}")
+            st.warning(f"Fehler bei DEIS-Analyse -> {e}")
 
     def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
         try:

@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy import text, create_engine, MetaData, Table
 from sqlalchemy.dialects.postgresql import insert
+import time
 
 
 class Database:
@@ -215,7 +216,7 @@ class Database:
 
     def get_all_eis_soc(self):
         conn = st.connection("sql", type="sql")
-        sql = ("SELECT DISTINCT SoC FROM eis_points ")
+        sql = ("SELECT DISTINCT soc FROM eis_points ")
         return conn.query(sql)
 
     def get_eis_points(self, Datei, soc):
@@ -232,7 +233,7 @@ class Database:
         conn = st.connection("sql", type="sql")
         sql = """SELECT eis.*, files.datum, files.cycle, files.zelle
                       FROM eis INNER JOIN files ON eis.datei = files.name
-                      WHERE eis.datei = :datei AND eis.soc = :soc"""
+                      WHERE eis.datei = :datei AND eis.soc = :soc AND eis.typ = 'eis'"""
         params = {"datei": Datei, "soc": soc}
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
