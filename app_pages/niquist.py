@@ -45,6 +45,7 @@ def points_app():
         options = [col for col in data.columns if col not in ["datei", "cycle", "zelle", "datum", "soc"]]
         y_values = col2.selectbox("Y-Werte", options)
         graphs = col2.toggle("Alle Grafen in einem Plot")
+        zero = col2.toggle("Startpunkt normalisieren")
         if not graphs:
             if selected == "SoC":
                 plots = soc
@@ -106,7 +107,7 @@ def niqhist_app():
                     filt_data = pd.concat([filt_data, cycle_data[spalten]])
                     data = pd.concat([data, cycle_data])
                     data_list.append(cycle_data)
-        data.drop(columns=["hash"], inplace=True)
+
 
         con1.subheader("Ausgewählte Daten:")
         con1.write(filt_data.drop_duplicates())

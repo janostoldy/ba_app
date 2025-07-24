@@ -1,4 +1,4 @@
-# Im Ordnern
+# Datenbank
 cd batterylab
 docker compose up -d
 docker exec -it BatteryLab bash
@@ -15,3 +15,7 @@ docker exec -it BatteryLab bash
 #Backup
 pg_dump -U postgres -d Battary_DB -F c -f /var/lib/postgresql/data/battary_db_backup.dump
 docker cp BatteryLab:/var/lib/postgresql/data/battary_db_backup.dump .
+
+#streamlit
+docker build -t streamlit .
+docker run -p 8502:8502 streamlit

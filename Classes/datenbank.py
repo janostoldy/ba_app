@@ -232,7 +232,7 @@ class Database:
         conn = st.connection("sql", type="sql")
         sql = """SELECT eis.*, files.datum, files.cycle, files.zelle
                       FROM eis INNER JOIN files ON eis.datei = files.name
-                      WHERE eis.datei = :datei AND eis.soc = :soc"""
+                      WHERE eis.datei = :datei AND eis.soc = :soc AND eis.typ = 'eis'"""
         params = {"datei": Datei, "soc": soc}
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
