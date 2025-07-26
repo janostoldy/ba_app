@@ -259,6 +259,30 @@ class Analyse:
         #except Exception as e:
             #raise Exception(f"Fehler bei OCV-Analyse -> {e}")
 
+    def analyse_safion(self, file_path, Zelle, save_data):
+        for data_path in file_path:
+            df = pd.read_csv(data_path)
+
+            # Metadaten und Daten trennen
+            meta_columns = df.columns[:13]  # Die ersten 13 Spalten sind Metadaten
+            data_columns = df.columns[13:]  # Die restlichen Spalten sind Daten
+
+            new_columns = ["ReZ", "ImZ", "PhaseZ", "Freq"]
+
+            for idx, row in df.iterrows():
+                data = pd.DataFrame()
+
+                meta_data = pd.DataFrame([row[meta_columns].values], columns=meta_columns)
+                for i in range(0, len(data_columns), 4):
+                    data_group = row[data_columns[i:i + 4]].values
+                    data_df = pd.DataFrame(list(data_group))
+                    data = pd.concat([data, data_df], axis=1, ignore_index=True)
+                # Erstellen eines neuen DataFrames
+                data = data.T
+                data.columns = new_columns
+                data["ImZ"] = -data["ImZ"]
+
+
     def insert_data(self, eis_values, deis_values, data_name):
         for eis in eis_values:
             self.DB.df_in_DB(df=eis, table_name='eis')
