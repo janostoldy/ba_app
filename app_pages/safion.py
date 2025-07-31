@@ -13,7 +13,7 @@ def safion_app():
         if sel is not None:
             up_file = next((file for file in uploaded_file if file.name == sel), None)
             dic = get_data(up_file, con1)
-            on = st.toggle("Delete wrong Data",value=True)
+            on = st.toggle("Delete wrong Data",value=False)
 
         else:
             dic = get_all_data(uploaded_file,con1)
