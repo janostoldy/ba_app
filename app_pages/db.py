@@ -40,14 +40,14 @@ def add_data_app():
     if datei_liste is not None:
         try:
             with st.spinner("Daten suchen...", show_time=True):
-                mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
+                files = [f for f in os.listdir(folder) if f.endswith('.mpr') or f.endswith('.csv')]
         except Exception as e:
             con2.error(f"Fehler beim Abrufen der Dateien im Ordner: {e}")
-            mpr_files = None
-        if mpr_files is not None and len(mpr_files) > 0:
+            files = None
+        if files is not None and len(files) > 0:
             # DF mit allen Dateien und Status und gefilterten Dateien
             gespeicherte_dateien = datei_liste['name'].values
-            import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in mpr_files])
+            import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in files])
             import_files["Status"] = import_files["Datei"].apply(lambda f: status_func(f, gespeicherte_dateien, folder))
             col1, col2 = con2.columns([4,1])
             col1.write("Gefundene .mpr-Dateien")
@@ -95,7 +95,7 @@ def add_data_app():
                 elif typ == "Thermische Relaxation":
                     DA.add_relax(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Impedanz":
-                    pass
+                    DA.analyse_imp(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 my_bar.progress(1, text="Datenanalyse erfolgreich!")
                 my_bar.empty()
                 con2.success("Daten erfolgreich in Datenbank gespeichert.")

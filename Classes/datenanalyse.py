@@ -259,91 +259,96 @@ class Analyse:
         except Exception as e:
             raise Exception(f"Fehler bei OCV-Analyse -> {e}")
 
-    def analyse_imp_safion(self, file_path, cycle, Zelle, save_data):
+    def analyse_imp(self, file_path, cycle, Zelle, save_data):
         for data_path in file_path:
-            df = pd.read_csv(data_path)
-            data_name = os.path.basename(data_path)
+            if data_path.endswith(".csv"):
+                self.analyse_imp_safion(data_path, cycle, Zelle, save_data)
+            elif data_path.endswith(".mpr"):
+                self.analyse_imp_biologic(data_path, cycle, Zelle, save_data)
 
-            # Metadaten und Daten trennen
-            meta_columns = df.columns[:13]  # Die ersten 13 Spalten sind Metadaten
-            data_columns = df.columns[13:]  # Die restlichen Spalten sind Daten
+    def analyse_imp_safion(self, data_path, cycle, Zelle, save_data):
+        df = pd.read_csv(data_path)
+        data_name = os.path.basename(data_path)
 
-            new_columns = ["re", "im", "phase", "freq"]
-            meta_data = pd.DataFrame()
-            for idx, row in df.iterrows():
-                data = pd.DataFrame()
+        # Metadaten und Daten trennen
+        meta_columns = df.columns[:13]  # Die ersten 13 Spalten sind Metadaten
+        data_columns = df.columns[13:]  # Die restlichen Spalten sind Daten
 
-                meta_data_in = pd.DataFrame([row[meta_columns].values], columns=meta_columns)
-                meta_data['time'] = meta_data_in['Time [s]']
-                meta_data['voltage'] = meta_data_in['Voltage [V]']
-                meta_data['current'] = meta_data_in['Current [A]']
-                meta_data['temp'] = meta_data_in['Temperature [°C]']
-                meta_data['delta_cap'] = 0
-                meta_data['c_rate'] = meta_data_in['C-Rate']
-                meta_data['datei'] = data_name
-                meta_data['typ'] = "Basitec"
-
-                for i in range(0, len(data_columns), 4):
-                    data_group = row[data_columns[i:i + 4]].values
-                    data_df = pd.DataFrame(list(data_group))
-                    data = pd.concat([data, data_df], axis=1, ignore_index=True)
-                # Erstellen eines neuen DataFrames
-                data = data.T
-                data.columns = new_columns
-                data["im"] = -data["im"]
-                for col in meta_data.columns:
-                    data[col] = meta_data[col].values[0]
-                if save_data:
-                    self.DB.df_in_DB(df=data, table_name='imp')
-                    self.DB.insert_file(data_name, cycle, "Imp Untersuchung", Zelle, "imp")
-
-    def analyse_imp_biologic(self, file_path, cycle,  Zelle, save_data):
-        for data_path in file_path:
-            data_name = os.path.basename(data_path)
-            mpr_file = BioLogic.MPRfile(data_path)
-            df = pd.DataFrame(mpr_file.data)
-            df = df.rename(columns=mes_spalten)
-
-            if 'zohm' not in df.columns:
-                raise Exception("Keine Eis-Daten")
-
-            # Eis Messung
-            start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqhz'] > 0)].index
-            end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqhz'] > 0)].index
-            if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
-                start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqhz'] > 0)].index
-                end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqhz'] > 0)].index
-            if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
-                raise Exception('No EIS data found in file or wrong flags.')
-
-            eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
-            zero_soc = min(df.qqomah)
-            eis_soc = round((df.qqomah[start_eis_indices - 1] - zero_soc) / 125) * 125
-            eis_ImA = df.ima[start_eis_indices - 1]
-            eis_C_Rate = round(eis_ImA / 1250) * 1250 / 2900
-            start_time = df.times[start_eis_indices]
-
+        new_columns = ["re", "im", "phase", "freq"]
+        meta_data = pd.DataFrame()
+        for idx, row in df.iterrows():
             data = pd.DataFrame()
-            for i, eis in enumerate(eis_values):
-                temp = pd.DataFrame()
-                eis_phi = np.deg2rad(eis['phasezdeg'])
-                temp['re'] = eis['zohm'] * np.cos(eis_phi.values)
-                temp['im'] = eis['zohm'] * np.sin(eis_phi.values) * -1
-                temp['freq'] = eis['freqhz']
-                temp['phase'] = eis_phi
-                temp['temp'] = eis['temperaturec']
-                temp['currant'] = eis['ima']
-                temp['voltage'] = eis['ecellv']
-                temp['delta_cap'] = eis_soc.iloc[i]
-                temp['c_rate'] = eis_C_Rate.iloc[i]
-                temp['time'] = eis['times'] - start_time.iloc[i]
-                temp['datei'] = data_name
-                temp['typ'] = "Biologic"
-                data = pd.concat([data, temp], ignore_index=True)
 
+            meta_data_in = pd.DataFrame([row[meta_columns].values], columns=meta_columns)
+            meta_data['time'] = meta_data_in['Time [s]']
+            meta_data['voltage'] = meta_data_in['Voltage [V]']
+            meta_data['current'] = meta_data_in['Current [A]']
+            meta_data['temp'] = meta_data_in['Temperature [°C]']
+            meta_data['delta_cap'] = 0
+            meta_data['c_rate'] = meta_data_in['C-Rate']
+            meta_data['datei'] = data_name
+            meta_data['typ'] = "Basitec"
+
+            for i in range(0, len(data_columns), 4):
+                data_group = row[data_columns[i:i + 4]].values
+                data_df = pd.DataFrame(list(data_group))
+                data = pd.concat([data, data_df], axis=1, ignore_index=True)
+            # Erstellen eines neuen DataFrames
+            data = data.T
+            data.columns = new_columns
+            data["im"] = -data["im"]
+            for col in meta_data.columns:
+                data[col] = meta_data[col].values[0]
             if save_data:
-                self.DB.insert_file(data_name, cycle, "Imp Untersuchung", Zelle, "imp")
                 self.DB.df_in_DB(df=data, table_name='imp')
+                self.DB.insert_file(data_name, cycle, "Imp Untersuchung", Zelle, "imp")
+
+    def analyse_imp_biologic(self, data_path, cycle,  Zelle, save_data):
+        data_name = os.path.basename(data_path)
+        mpr_file = BioLogic.MPRfile(data_path)
+        df = pd.DataFrame(mpr_file.data)
+        df = df.rename(columns=mes_spalten)
+
+        if 'zohm' not in df.columns:
+            raise Exception("Keine Eis-Daten")
+
+        # Eis Messung
+        start_eis_indices = df[((df['flags'] == 37) | (df['flags'] == 165)) & (df['freqhz'] > 0)].index
+        end_eis_indices = df[((df['flags'] == 69) | (df['flags'] == 197)) & (df['freqhz'] > 0)].index
+        if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
+            start_eis_indices = df[((df['flags'] == 53) | (df['flags'] == 181)) & (df['freqhz'] > 0)].index
+            end_eis_indices = df[((df['flags'] == 85) | (df['flags'] == 213)) & (df['freqhz'] > 0)].index
+        if len(start_eis_indices) == 0 or len(end_eis_indices) == 0:
+            raise Exception('No EIS data found in file or wrong flags.')
+
+        eis_values = [df.loc[start:end].copy() for start, end in zip(start_eis_indices, end_eis_indices)]
+        zero_soc = min(df.qqomah)
+        eis_soc = round((df.qqomah[start_eis_indices - 1] - zero_soc) / 125) * 125
+        eis_ImA = df.ima[start_eis_indices - 1]
+        eis_C_Rate = round(eis_ImA / 1250) * 1250 / 2900
+        start_time = df.times[start_eis_indices]
+
+        data = pd.DataFrame()
+        for i, eis in enumerate(eis_values):
+            temp = pd.DataFrame()
+            eis_phi = np.deg2rad(eis['phasezdeg'])
+            temp['re'] = eis['zohm'] * np.cos(eis_phi.values)
+            temp['im'] = eis['zohm'] * np.sin(eis_phi.values) * -1
+            temp['freq'] = eis['freqhz']
+            temp['phase'] = eis_phi
+            temp['temp'] = eis['temperaturec']
+            temp['currant'] = eis['ima']
+            temp['voltage'] = eis['ecellv']
+            temp['delta_cap'] = eis_soc.iloc[i]
+            temp['c_rate'] = eis_C_Rate.iloc[i]
+            temp['time'] = eis['times'] - start_time.iloc[i]
+            temp['datei'] = data_name
+            temp['typ'] = "Biologic"
+            data = pd.concat([data, temp], ignore_index=True)
+
+        if save_data:
+            self.DB.insert_file(data_name, cycle, "Imp Untersuchung", Zelle, "imp")
+            self.DB.df_in_DB(df=data, table_name='imp')
 
 
     def insert_data(self, eis_values, deis_values, data_name):
