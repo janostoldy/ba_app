@@ -239,6 +239,32 @@ class Database:
             result = s.execute(text(sql), params).fetchall()
         return result
 
+    def get_imp_files(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * 
+                 FROM files l
+                 where typ = 'imp'"""
+        return conn.query(sql)
+
+    def get_imp_rate(self,Datei):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT DISTINCT c_rate FROM imp 
+                 WHERE datei = :datei
+                 ORDER BY c_rate ASC"""
+        params = {"datei": Datei}
+        with conn.session as s:
+            result = s.execute(text(sql), params).fetchall()
+        return result
+
+    def get_impedanz(self, Datei):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * FROM imp WHERE datei = :datei"""
+        params = {"datei": Datei}
+        with conn.session as s:
+            result = s.execute(text(sql), params).fetchall()
+        return result
+
+
     def check_con(self):
         conn = st.connection("sql", type="sql")
         start = time.time()

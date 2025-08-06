@@ -95,7 +95,7 @@ def add_data_app():
                 elif typ == "Thermische Relaxation":
                     DA.add_relax(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Impedanz":
-                    DA.analyse_imp(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                    DA.analyse_imp(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 my_bar.progress(1, text="Datenanalyse erfolgreich!")
                 my_bar.empty()
                 con2.success("Daten erfolgreich in Datenbank gespeichert.")

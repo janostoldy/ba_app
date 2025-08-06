@@ -259,8 +259,11 @@ class Analyse:
         except Exception as e:
             raise Exception(f"Fehler bei OCV-Analyse -> {e}")
 
-    def analyse_imp(self, file_path, cycle, Zelle, save_data):
-        for data_path in file_path:
+    def analyse_imp(self, file_path, cycle, Zelle, save_data, bar):
+        n_files = len(file_path)
+        for i, data_path in enumerate(file_path):
+            data_name = os.path.basename(data_path)
+            bar.progress((i + 1) / n_files, text=f"Analysieren Datei {i + 1} von {n_files}: {data_name}")
             if data_path.endswith(".csv"):
                 self.analyse_imp_safion(data_path, cycle, Zelle, save_data)
             elif data_path.endswith(".mpr"):
@@ -325,7 +328,7 @@ class Analyse:
         zero_soc = min(df.qqomah)
         eis_soc = round((df.qqomah[start_eis_indices - 1] - zero_soc) / 125) * 125
         eis_ImA = df.ima[start_eis_indices - 1]
-        eis_C_Rate = round(eis_ImA / 1250) * 1250 / 2900
+        eis_C_Rate = round(eis_ImA / 2900,2)
         start_time = df.times[start_eis_indices]
 
         data = pd.DataFrame()
@@ -337,7 +340,7 @@ class Analyse:
             temp['freq'] = eis['freqhz']
             temp['phase'] = eis_phi
             temp['temp'] = eis['temperaturec']
-            temp['currant'] = eis['ima']
+            temp['current'] = eis['ima']
             temp['voltage'] = eis['ecellv']
             temp['delta_cap'] = eis_soc.iloc[i]
             temp['c_rate'] = eis_C_Rate.iloc[i]
