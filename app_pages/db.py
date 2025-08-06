@@ -21,7 +21,7 @@ def add_data_app():
     alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"], index=st.session_state.get("zelle_index",None))
     st.session_state["zelle_index"] = alle_zellen["id"].tolist().index(zelle) if zelle in alle_zellen["id"].tolist() else None
-    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Ageing","DVA-Analyse","Kapazitäts-Messung",
+    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Ageing","DVA-Analyse","Kapazitäts-Messung","Impedanz",
             "Thermische Relaxation"]
     typ = con2.selectbox("Analyse Art",typs, index=st.session_state.get("typ_index",None))
     st.session_state["typ_index"] = typs.index(typ) if typ in typs else None
@@ -94,6 +94,8 @@ def add_data_app():
                     DA.analyze_Aeging(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 elif typ == "Thermische Relaxation":
                     DA.add_relax(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                elif typ == "Impedanz":
+                    pass
                 my_bar.progress(1, text="Datenanalyse erfolgreich!")
                 my_bar.empty()
                 con2.success("Daten erfolgreich in Datenbank gespeichert.")
