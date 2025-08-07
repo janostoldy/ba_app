@@ -124,10 +124,25 @@ def niqhist_app():
         tabels = col2.toggle("Tabellen anzeigen")
         graphs = col2.toggle("Alle Grafen in einem Plot")
         options = ["soc", "cycle","zelle"]
-        big_plot = col1.segmented_control("Plots", options,
+        big_plot = col1.segmented_control("Daten", options,
                                           help="Wähle Wert der einzelnen Diagramme",
                                           default=options[2],
                                           disabled=graphs)
+        options = ["Niqhist", "Bode-Re", "Bode-Im", "Bode-Phase"]
+        plot = col1.segmented_control("Plots",options,default=options[0])
+        if plot == "Niqhist":
+            x_data = "calc_rezohm"
+            y_data = "calc_imzohm"
+        elif plot == "Bode-Re":
+            x_data = "freqhz"
+            y_data = "calc_rezohm"
+        elif plot == "Bode-Im":
+            x_data = "freqhz"
+            y_data = "calc_imzohm"
+        elif plot == "Bode-Phase":
+            x_data = "freqhz"
+            y_data = "phasezdeg"
+
         if not graphs:
             if big_plot == "soc":
                 plots = soc
@@ -159,7 +174,7 @@ def niqhist_app():
             if not kHz:
                 data_mod = data_mod[data_mod["freqhz"] != 1999]
             name = f"Niqhist plot von {p}"
-            fig = plot_graphs(data_mod, name,subplots)
+            fig = plot_graphs(data_mod, name,subplots,x_data,y_data)
             con2.plotly_chart(fig)
             space, col2 = con2.columns([4, 1])
             download_button(col2,fig,key)
@@ -183,19 +198,15 @@ def plot_points(data, name, y_values, subplots):
     )
     return fig
 
-def plot_graphs(data, name, subplots):
+def plot_graphs(data, name, subplots, x, y):
     fig = px.line(data,
-                  x="calc_rezohm",
-                  y="calc_imzohm",
+                  x=x,
+                  y=y,
                   color=subplots,
                   title=name,
                   markers=True,
                   color_discrete_sequence=list(colors.values()),
                   hover_data="freqhz"
                   )
-    fig.update_layout(
-        yaxis_title='ImZ (Ohm)',
-        xaxis_title='ReZ (Ohm)',
-        template='simple_white',
-    )
+
     return fig

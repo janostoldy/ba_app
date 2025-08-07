@@ -21,7 +21,7 @@ def add_data_app():
     alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"], index=st.session_state.get("zelle_index",None))
     st.session_state["zelle_index"] = alle_zellen["id"].tolist().index(zelle) if zelle in alle_zellen["id"].tolist() else None
-    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Ageing","DVA-Analyse","Kapazitäts-Messung",
+    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Ageing","DVA-Analyse","Kapazitäts-Messung","Impedanz",
             "Thermische Relaxation"]
     typ = con2.selectbox("Analyse Art",typs, index=st.session_state.get("typ_index",None))
     st.session_state["typ_index"] = typs.index(typ) if typ in typs else None
@@ -40,14 +40,14 @@ def add_data_app():
     if datei_liste is not None:
         try:
             with st.spinner("Daten suchen...", show_time=True):
-                mpr_files = [f for f in os.listdir(folder) if f.endswith('.mpr')]
+                files = [f for f in os.listdir(folder) if f.endswith('.mpr') or f.endswith('.csv')]
         except Exception as e:
             con2.error(f"Fehler beim Abrufen der Dateien im Ordner: {e}")
-            mpr_files = None
-        if mpr_files is not None and len(mpr_files) > 0:
+            files = None
+        if files is not None and len(files) > 0:
             # DF mit allen Dateien und Status und gefilterten Dateien
             gespeicherte_dateien = datei_liste['name'].values
-            import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in mpr_files])
+            import_files = pd.DataFrame([{'Datei': f,'Größe (KB)': round(os.path.getsize(os.path.join(folder, f)) / 1024)} for f in files])
             import_files["Status"] = import_files["Datei"].apply(lambda f: status_func(f, gespeicherte_dateien, folder))
             col1, col2 = con2.columns([4,1])
             col1.write("Gefundene .mpr-Dateien")
@@ -94,6 +94,8 @@ def add_data_app():
                     DA.analyze_Aeging(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 elif typ == "Thermische Relaxation":
                     DA.add_relax(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
+                elif typ == "Impedanz":
+                    DA.analyse_imp(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True, bar=my_bar)
                 my_bar.progress(1, text="Datenanalyse erfolgreich!")
                 my_bar.empty()
                 con2.success("Daten erfolgreich in Datenbank gespeichert.")

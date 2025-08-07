@@ -76,11 +76,12 @@ def kapazitaet_app():
 
 
 def plot_kapa(data,name,subplots):
-    fig = px.scatter(data,
+    fig = px.line(data,
                   x="cycle",
                   y="kapa",
                   color=subplots,
                   title=name,
+                  markers=True,  # Marker aktivieren
                   color_discrete_sequence=list(colors.values())
                   )
     fig.update_layout(
