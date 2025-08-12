@@ -14,7 +14,7 @@ sql_spalten = [
     'qchargemah',
     'qqomah',
     'energyWh',
-    'ImA',
+    'ima',
     'times',
     'calc_times',
     'datei',

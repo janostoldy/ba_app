@@ -13,7 +13,7 @@ docker exec -it BatteryLab bash
     ^P ^Q
 
 #Backup
-pg_dump -U postgres -d Battary_DB -F c -f /var/lib/postgresql/data/battary_db_backup.dump
+    pg_dump -U postgres -d Battary_DB -F c -f /var/lib/postgresql/data/battary_db_backup.dump
 docker cp BatteryLab:/var/lib/postgresql/data/battary_db_backup.dump .
 
 #streamlit
