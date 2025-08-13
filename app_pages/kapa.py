@@ -41,7 +41,7 @@ def kapazitaet_app():
             plot_name = "zelle"
             subplots = "zelle"
             einheit = "mAh"
-        plot_x = (con1.segmented_control("X-Achse",["cycle", "cap_cycle"]))
+        plot_x = con1.segmented_control("X-Achse",["cycle", "cap_cycle"],default="cycle")
 
 
         key = 0
@@ -78,6 +78,7 @@ def kapazitaet_app():
 
 
 def plot_kapa(data,name,subplots,x):
+    data = data.sort_values(by=x)
     fig = px.line(data,
                   x=x,
                   y="kapa",
