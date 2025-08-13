@@ -1,7 +1,11 @@
 import streamlit as st
+from tests.test_calc_fig import test_calc_fig
+
 from Classes.datenbank import Database
 import pandas as pd
+import numpy as np
 import plotly.express as px
+from scipy.interpolate import interp1d
 
 def impedanz_app():
     st.title("Impedanz")
@@ -19,8 +23,67 @@ def impedanz_app():
             data.append(row)
     df = pd.DataFrame(data)
     st.write(df)
+    colums = ["time", "voltage", "current", "temp", "delta_cap", "c_rate", "re", "im", "phase", "freq",
+              "datei", "typ"]
+    imp_data = pd.DataFrame()
+    for plt in df.itertuples(index=False):
+        data = DB.get_impedanz(plt.name,plt.c_rate)
+        if data[0].typ == "Basitec":
+            min_time = min(row.time for row in data)
+            filtered_rows = [row for row in data if row.time == min_time]
+        else:
+            filtered_rows = data
+        filtered_df = pd.DataFrame(filtered_rows, columns=colums)
+        imp_data = pd.concat([imp_data, filtered_df], ignore_index=True)
+        imp_data["c_rate"] = pd.to_numeric(imp_data["c_rate"], errors="coerce")
 
     con1 = st.container(border=False)
+    calc = con1.button("Calc_Field", type="secondary", use_container_width=True)
+    if calc:
+        for c in c_rates:
+            data = imp_data[imp_data["c_rate"] == c]
+            data = data[data["freq"] <= 1900]
+            basy = data[data["typ"] == "Basitec"]
+            biol = data[data["typ"] == "Biologic"]
+            re_f_basy = interp1d(basy["freq"], basy["re"],kind='linear', fill_value='extrapolate')
+            re_f_biol = interp1d(biol["freq"], biol["re"],kind='linear', fill_value='extrapolate')
+            x_common = np.linspace(min(basy["freq"].min(), biol["freq"].min()),max(basy["freq"].max(), biol["freq"].max()),200)
+            re_inter_basy = re_f_basy(x_common)
+            re_inter_biol = re_f_biol(x_common)
+            re_diff = re_inter_basy - re_inter_biol
+            im_f_basy = interp1d(basy["freq"], basy["im"], kind='linear', fill_value='extrapolate')
+            im_f_biol = interp1d(biol["freq"], biol["im"], kind='linear', fill_value='extrapolate')
+            im_inter_basy = im_f_basy(x_common)
+            im_inter_biol = im_f_biol(x_common)
+            im_diff = im_inter_basy - im_inter_biol
+            ph_f_basy = interp1d(basy["freq"], basy["phase"], kind='linear', fill_value='extrapolate')
+            ph_f_biol = interp1d(biol["freq"], biol["phase"], kind='linear', fill_value='extrapolate')
+            ph_inter_basy = ph_f_basy(x_common)
+            ph_inter_biol = ph_f_biol(x_common)
+            ph_diff = ph_inter_basy - ph_inter_biol
+
+            re_calc = re_inter_basy - re_diff
+            im_calc = im_inter_basy - im_diff
+            ph_calc = ph_inter_basy - ph_diff
+            diff_frame = pd.DataFrame({
+                "time": 0,
+                "voltage": 0,
+                "current": 2.9*c,
+                "temp": 26,
+                "delta_cap": 0,
+                "c_rate": c,
+                "re": re_diff,
+                "im": im_diff,
+                "phase": ph_diff,
+                "freq": x_common,
+                "datei": "Berechnet",
+                "typ": "calc"
+            })
+            imp_data = pd.concat([imp_data, diff_frame], ignore_index=True)
+
+
+
+
     options = ["Niqhist", "Bode-Re", "Bode-Im", "Bode-Phase"]
     plot = con1.segmented_control("Plots", options, default=options[0])
     if plot == "Niqhist":
@@ -35,21 +98,6 @@ def impedanz_app():
     elif plot == "Bode-Phase":
         x_data = "freq"
         y_data = "phase"
-
-    colums = ["time", "voltage", "current", "temp", "delta_cap", "c_rate", "re", "im", "phase", "freq",
-              "datei", "typ"]
-
-    imp_data = pd.DataFrame()
-    for plot in df.itertuples(index=False):
-        data = DB.get_impedanz(plot.name,plot.c_rate)
-        if data[0].typ == "Basitec":
-            min_time = min(row.time for row in data)
-            filtered_rows = [row for row in data if row.time == min_time]
-        else:
-            filtered_rows = data
-        filtered_df = pd.DataFrame(filtered_rows, columns=colums)
-        imp_data = pd.concat([imp_data, filtered_df], ignore_index=True)
-        imp_data["c_rate"] = pd.to_numeric(imp_data["c_rate"], errors="coerce")
 
     for c in c_rates:
         con = st.container(border=False)
