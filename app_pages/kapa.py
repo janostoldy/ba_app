@@ -41,6 +41,8 @@ def kapazitaet_app():
             plot_name = "zelle"
             subplots = "zelle"
             einheit = "mAh"
+        plot_x = (con1.segmented_control("X-Achse",["cycle", "cap_cycle"]))
+
 
         key = 0
         for p in plots:
@@ -49,7 +51,7 @@ def kapazitaet_app():
             if not selected:
                 data_mod = data[data[plot_name] == p]
             name = f"Kapazität von {plot_name} {p} in {einheit}"
-            fig = plot_kapa(data_mod, name,subplots)
+            fig = plot_kapa(data_mod, name,subplots,plot_x)
             con2.plotly_chart(fig)
             fig.update_layout(
                 template="plotly",  # <- wichtig!
@@ -75,9 +77,9 @@ def kapazitaet_app():
             con2.dataframe(data_mod)
 
 
-def plot_kapa(data,name,subplots):
+def plot_kapa(data,name,subplots,x):
     fig = px.line(data,
-                  x="cycle",
+                  x=x,
                   y="kapa",
                   color=subplots,
                   title=name,
