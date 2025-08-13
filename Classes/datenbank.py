@@ -184,10 +184,9 @@ class Database:
         conn = st.connection("sql", type="sql")
         sql = "SELECT * FROM files WHERE typ = 'Kapa'"
         return conn.query(sql)
-
     def get_kapa(self, Datei):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT kapa.datei, kapa.kapa, kapa.info, files.datum, files.cycle, files.zelle
+        sql = """SELECT kapa.datei, kapa.kapa, kapa.info, files.datum, files.cycle, files.zelle, files.cap_cycle
                      FROM kapa INNER JOIN files ON kapa.datei=files.name
                      WHERE kapa.datei = :datei"""
         params = {"datei": Datei}
@@ -213,25 +212,22 @@ class Database:
         conn = st.connection("sql", type="sql")
         sql = "SELECT * FROM files WHERE typ = 'EIS'"
         return conn.query(sql)
-
     def get_all_eis_soc(self):
         conn = st.connection("sql", type="sql")
         sql = ("SELECT DISTINCT soc FROM eis_points ")
         return conn.query(sql)
-
     def get_eis_points(self, Datei, soc):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT eis_points.*, files.datum, files.cycle, files.zelle
+        sql = """SELECT eis_points.*, files.datum, files.cycle, files.zelle, files.cap_cycle
                       FROM eis_points INNER JOIN files ON eis_points.datei=files.name 
                       WHERE eis_points.datei = :datei AND eis_points.soc = :soc"""
         params = {"datei": Datei, "soc": soc}
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
         return result
-
     def get_eis_plots(self, Datei, soc):
         conn = st.connection("sql", type="sql")
-        sql = """SELECT eis.*, files.datum, files.cycle, files.zelle
+        sql = """SELECT eis.*, files.datum, files.cycle, files.zelle, files.cap_cycle
                       FROM eis INNER JOIN files ON eis.datei = files.name
                       WHERE eis.datei = :datei AND eis.soc = :soc AND eis.typ = 'eis'"""
         params = {"datei": Datei, "soc": soc}
@@ -245,7 +241,6 @@ class Database:
                  FROM files l
                  where typ = 'imp'"""
         return conn.query(sql)
-
     def get_imp_rate(self,Datei):
         conn = st.connection("sql", type="sql")
         sql = """SELECT DISTINCT c_rate FROM imp 
@@ -255,7 +250,6 @@ class Database:
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
         return result
-
     def get_impedanz(self, Datei, c_rate):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * FROM imp WHERE datei = :datei AND ROUND(c_rate, 2) = :c_rate"""
@@ -264,6 +258,11 @@ class Database:
             result = s.execute(text(sql), params).fetchall()
         return result
 
+    def update_files(self, zelle):
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT cap_p_cyc FROM zellen WHERE id = :zelle"
+        params = {"zelle": zelle}
+        cap = conn.query(sql, params=params)
 
     def check_con(self):
         conn = st.connection("sql", type="sql")

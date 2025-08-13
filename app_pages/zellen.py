@@ -7,17 +7,21 @@ def add_zelle_app():
     st.title("Zellen hinzufügen")
     DB = Database("zellen")
     con1 = st.container(border=True)
-    col1, col2, col3 = con1.columns(3)
+    col1, col2, col3, col4 = con1.columns([2,1,1,2])
     id = col1.text_input("Zelle ID", placeholder="JT_VTC_001", max_chars=20)
     cycle = col2.number_input("Zelle Cycle", min_value=0, max_value=1000, value=0, step=1)
-    Typ = col3.text_input("Zelle Typ", placeholder="Zellen Typ" ,max_chars=20)
+    cap_per_cycle = col3.number_input("Kapazität pro Cyklus", min_value=0, max_value=4000, value=0, step=1)
+    Typ = col4.text_input("Zelle Typ", placeholder="Zellen Typ" ,max_chars=20)
     info = con1.text_area("Zelle Info", placeholder="Zelle Info", max_chars=255)
+
     if con1.button("Daten Hinzufügen", use_container_width=True, type="primary"):
         data = pd.DataFrame({
             "id": [id],
             "typ": [Typ],
             "cycle": [cycle],
             "info": [info],
+            "cap_p_cyc": [cap_per_cycle],
+            #"capa"
         })
         try:
             with st.spinner("Daten hinzufügen...", show_time=True):
