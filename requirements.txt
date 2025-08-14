@@ -7,5 +7,6 @@ python-dotenv
 plotly
 scipy
 galvani
+pytest
 kaleido
 psycopg2-binary
