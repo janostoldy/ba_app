@@ -8,11 +8,13 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+
 RUN git clone https://github.com/janostoldy/ba_app.git .
 
 COPY secrets.toml /batteryapp/.streamlit/
 
 RUN pip install -r requirements.txt
+
 
 EXPOSE 8501
 

@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
+import kaleido
 
 from src.user import User, get_known_user
 from app_pages.home import home_app
@@ -17,7 +18,7 @@ from app_pages.impedanz import impedanz_app
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
 load_dotenv()
-
+kaleido.get_chrome_sync()
 st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
 # Anmeldung
