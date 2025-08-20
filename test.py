@@ -1,9 +1,37 @@
 import pandas as pd
-from config import mes_spalten
-from galvani import BioLogic
+import numpy as np
+import plotly.express as px
 
-mpr_file = BioLogic.MPRfile("/Volumes/ftm/EV_Lab_BatLab/02_Messexport/Urban/BA_Toldy/Charakterisierung/JT_VTC_001/JT_VTC_001_Characterization_02_MB_CA1.mpr")
-df = pd.DataFrame(mpr_file.data)
-dva_raw = df.rename(columns=mes_spalten)
+# Beispiel-Datenpunkte für ein CCCV-Ladeprofil
+# x-Achse: Ladezeit (in h)
+# y-Achse 1: Zellspannung (in V)
+# y-Achse 2: Ladestrom (in C-Rate)
 
-print(dva_raw.head)
+time = np.linspace(0, 3, 100)  # 0 bis 3 Stunden in 3-Minuten-Schritten
+
+# Zellspannung (V): erst linearer Anstieg (CC-Phase), dann Plateau (CV-Phase)
+voltage = np.piecewise(time,
+                       [time < 1.7, time >= 1.7],
+                       [lambda t: 0.5 + (t/1.7)*(1.5-0.7),  # Anstieg von 3.0V auf 4.2V
+                        1.3])
+
+# Ladestrom (C-Rate): konstant bis 1.5h, danach exponentiell abfallend
+current = np.piecewise(time,
+                       [time < 1.7, time >= 1.7],
+                       [1.0, lambda t: np.exp(-(t-1.7)*2)])
+
+# DataFrame erstellen
+sp = pd.DataFrame({
+    "Zeit_h": time,
+    "values": voltage,
+    "kind": "Spannung"
+})
+st = pd.DataFrame({
+    "Zeit_h": time,
+    "values": current,
+    "kind": "Strom"
+})
+df = pd.concat([sp, st], ignore_index=True)
+
+fig = px.line(df, x="Zeit_h", y="values",color="kind",)
+fig.show()

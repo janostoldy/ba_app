@@ -1,5 +1,4 @@
 import streamlit as st
-from tests.test_calc_fig import test_calc_fig
 
 from Classes.datenbank import Database
 import pandas as pd

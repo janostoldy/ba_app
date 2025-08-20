@@ -1,0 +1,10 @@
+APP_alt.py
+Dockerfile
+docker
+main.py
+test.py
+/Test_Code/
+/00_Test_Data/
+.git/
+.gitignore
+__pycache__/
