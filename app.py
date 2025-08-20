@@ -18,7 +18,7 @@ from app_pages.impedanz import impedanz_app
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
 load_dotenv()
-kaleido.get_chrome_sync()
+
 st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
 # Anmeldung
