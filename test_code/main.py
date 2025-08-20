@@ -1,5 +1,5 @@
-from Classes.datenbank import Database
-from Classes.datenanalyse import EIS_Analyse
+from classes.datenbank import Database
+from classes.datenanalyse import EIS_Analyse
 
 try:
     DB = Database()

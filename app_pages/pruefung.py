@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from Classes.datenbank import Database
+from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
 
 

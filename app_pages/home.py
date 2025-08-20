@@ -1,5 +1,5 @@
 import streamlit as st
-from Classes.datenbank import Database
+from classes.datenbank import Database
 
 def home_app():
     st.title("Home")

@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 from src.filtern import daten_filter
 from src.plotting_functions import download_button
-from Classes.datenbank import Database
+from classes.datenbank import Database
 
 def dva_app():
     st.title("DVA Analysis")

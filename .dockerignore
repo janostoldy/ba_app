@@ -1,9 +1,6 @@
-APP_alt.py
-Dockerfile
-docker
-main.py
+/docker/
 test.py
-/Test_Code/
+/test_code/
 /00_Test_Data/
 .git/
 .gitignore

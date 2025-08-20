@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from Classes.datenbank import Database
+from classes.datenbank import Database
 from src.filtern import daten_filter, typ_filer
 from src.plotting_df import highlight_status, status_func
-from Classes.datenanalyse import Analyse
+from classes.datenanalyse import Analyse
 import os
 
 def add_data_app():

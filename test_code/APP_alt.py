@@ -5,7 +5,7 @@ from app_pages.eis import Plot_EIS
 from app_pages.DEIS import Plot_DEIS
 from src.plotting_functions import get_linestyles
 
-from Classes.datenbank import Database
+from classes.datenbank import Database
 
 #Run this Comand in Terminal: streamlit run /Users/janostoldy/Documents/git_projecte/ba/EIS_APP.py
 

@@ -4,7 +4,7 @@ import pandas as pd
 import io
 from src.filtern import daten_filter
 from src.plotting_functions import colors, download_button
-from Classes.datenbank import Database
+from classes.datenbank import Database
 
 def kapazitaet_app():
     st.title("Kapazität")

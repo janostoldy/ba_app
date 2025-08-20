@@ -1,8 +1,8 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from Classes.datenanalyse import Analyse
-from Classes.datenbank import Database
+from classes.datenanalyse import Analyse
+from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors, download_button
 

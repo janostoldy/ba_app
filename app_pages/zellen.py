@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from Classes.datenbank import Database
+from classes.datenbank import Database
 
 def add_zelle_app():
     st.title("Zellen hinzufügen")

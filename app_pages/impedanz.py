@@ -1,6 +1,6 @@
 import streamlit as st
 
-from Classes.datenbank import Database
+from classes.datenbank import Database
 import pandas as pd
 import numpy as np
 import plotly.express as px

@@ -3,7 +3,7 @@ import hashlib
 from galvani import BioLogic
 import streamlit as st
 
-from Classes.datenbank import Database
+from classes.datenbank import Database
 from config import mes_spalten
 import pandas as pd
 import numpy as np
