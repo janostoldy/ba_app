@@ -1,6 +1,7 @@
 # Datenbank
 cd batterylab
 docker compose up -d
+docker compose build --no-cache battery_app
 docker exec -it BatteryLab bash
     #Im Container
     psql -U postgres -d Battary_DB

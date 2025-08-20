@@ -14,11 +14,12 @@ from app_pages.zellen import add_zelle_app, show_zelle_app
 from app_pages.pruefung import pruefung_app
 from app_pages.safion import safion_app
 from app_pages.impedanz import impedanz_app
+import kaleido
 
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
 load_dotenv()
-
+kaleido.get_chrome_sync()
 st.set_page_config(layout="wide", page_icon="🔋", page_title="Analyse-Tool")
 
 # Anmeldung
