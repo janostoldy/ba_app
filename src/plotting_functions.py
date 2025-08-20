@@ -76,7 +76,7 @@ def download_button(col, fig, key):
         svg_data = svg_buffer.getvalue()
         dis = False
     except Exception:
-        svg_data = None
+        svg_data = b""
         dis = True
     col.download_button(
         label="Download als SVG",
