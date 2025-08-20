@@ -1,32 +1,32 @@
 services:
-  postgres:
+  battery_db:
     image: postgres:17
-    container_name: BatteryLab
+    container_name: battery_db
     environment:
       POSTGRES_PASSWORD: Schildkr0te
       POSTGRES_DB: Battary_DB
     ports:
       - "5431:5432"
     volumes:
-      - Battery_Lab:/var/lib/postgresql/data
+      - battery_data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - battery_network
 
-  app:
+  battery_app:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile
     container_name: battery_app
     ports:
       - "8501:8501"
     depends_on:
-      - postgres
+      - battery_db
     networks:
       - battery_network
 
 volumes:
-  Battery_Lab:
+  battery_data:
 
 networks:
   battery_network:
