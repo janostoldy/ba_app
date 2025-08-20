@@ -1,5 +1,6 @@
 import re
 import io
+import plotly.io as pio
 
 
 colors = {
@@ -69,14 +70,20 @@ def download_button(col, fig, key):
 
     # --- Export als SVG ---
     # Temporären Buffer für SVG-Datei anlegen
-    svg_buffer = io.BytesIO()
-    fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
-    svg_data = svg_buffer.getvalue()
+    try:
+        svg_buffer = io.BytesIO()
+        fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
+        svg_data = svg_buffer.getvalue()
+        dis = False
+    except Exception:
+        svg_data = None
+        dis = True
     col.download_button(
         label="Download als SVG",
         data=svg_data,
         file_name="plot.svg",
         mime="image/svg+xml",
         key=key,
-        use_container_width=True
+        use_container_width=True,
+        disabled=dis,
     )
