@@ -69,12 +69,18 @@ class Analyse:
 
     def calc_niquist_data(self, eis_data,save_data):
         results = []
+
+        def nearest(series, value):
+            idx = (series - value).abs().idxmin()  # Index des nächstgelegenen Werts
+            return idx
+
         for eis in eis_data:
             eis = eis[eis["freqhz"] != 1999]
             eis = eis.sort_values(by="freqhz")
             re = eis['calc_rezohm']
             im = eis['calc_imzohm']
             freq = eis['freqhz']
+            phase = eis['phasezdeg']
             s_im = savgol_filter(im, window_length=7, polyorder=2)
             minima_indices, _ = find_peaks(-s_im)
             minima_indices = minima_indices[0]
@@ -83,18 +89,32 @@ class Analyse:
             zif_indizes = np.where(np.diff(np.sign(im)))[0]
             zif_indizes = zif_indizes[0]
 
+            idx_200 = nearest(eis["freqhz"], 200)
+            idx_400 = nearest(eis["freqhz"], 400)
+
             temp = {
                 'soc': eis['soc'].values[0],
                 'calc_ima': eis['calc_ima'].values[0],
                 'im_min': im.iloc[minima_indices],
                 're_min': re.iloc[minima_indices],
+                'phase_min': phase.iloc[minima_indices],
                 'freq_min': freq.iloc[minima_indices],
                 'im_max': im.iloc[maxima_indices],
                 're_max': re.iloc[maxima_indices],
+                'phase_max': phase.iloc[maxima_indices],
                 'freq_max': freq.iloc[maxima_indices],
                 'im_zif': im.iloc[zif_indizes],
                 're_zif': re.iloc[zif_indizes],
+                'phase_zif': phase.iloc[zif_indizes],
                 'freq_zif': freq.iloc[zif_indizes],
+                're_200': re.iloc[idx_200],
+                'im_200': im.iloc[idx_200],
+                'phase_200': phase.iloc[idx_200],
+                'freq_200': freq.iloc[idx_200],
+                're_400': re.iloc[idx_400],
+                'im_400': im.iloc[idx_400],
+                'phase_400': phase.iloc[idx_400],
+                'freq_400': freq.iloc[idx_400],
                 'datei': eis['datei'].values[0]
             }
             results.append(temp)

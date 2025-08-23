@@ -40,7 +40,7 @@ def points_app():
 
         key = 0
         col1, col2 = con1.columns(2)
-        options = ["SoC", "Zelle"]
+        options = ["SoC", "Zelle", "Zyklus"]
         selected = col1.segmented_control("Subplots",options,help="Wähle Wert aus der in einem Diagramm angezeigt wird",default=options[1])
         options = [col for col in data.columns if col not in ["datei", "cycle", "zelle", "datum", "soc"]]
         y_values = col2.selectbox("Y-Werte", options)
@@ -52,16 +52,25 @@ def points_app():
                 plot_name = "soc"
                 subplots = "zelle"
                 einheit = "mAh"
+                x_values = "cycle"
+            elif selected == "Zyklus":
+                plots = zelle
+                plot_name = "zelle"
+                subplots = "cycle"
+                x_values = "soc"
+                einheit = "mAh"
             else:
                 plots = zelle
                 plot_name = "zelle"
                 subplots = "soc"
+                x_values = "cycle"
                 einheit = ""
         else:
             plots = ["allen ausgewählten Daten"]
             plot_name = ""
             data_mod = data
             subplots = "zelle"
+            x_values = "cycle"
             einheit = ""
 
         for p in plots:
@@ -69,8 +78,10 @@ def points_app():
             con2.divider()
             if not graphs:
                 data_mod = data[data[plot_name] == p]
+            if selected == "Zyklus":
+                data_mod.sort_values("soc", inplace=True)
             name = f"{plot_name} {p} {einheit}"
-            fig = plot_points(data_mod, name, y_values,subplots)
+            fig = plot_points(data_mod, name, x_values, y_values,subplots)
             con2.plotly_chart(fig)
             space, col2 = con2.columns([4, 1])
             download_button(col2,fig,key)
@@ -113,7 +124,7 @@ def niqhist_app():
         con1.write(filt_data.drop_duplicates())
         if con1.button("Daten Aktualisieren", type="secondary", use_container_width=True,
                        help="Führt die Niqhist-Analyse ein weiteres mal durch um neue Datenpunkte hinzuzufügen"):
-            DA = Analyse(DB)
+            DA = Analyse()
             DA.calc_niquist_data(data_list,True)
         con1.subheader("Plots:")
 
@@ -186,9 +197,9 @@ def niqhist_app():
             if tabels:
                 con2.dataframe(data_mod)
 
-def plot_points(data, name, y_values, subplots):
+def plot_points(data, name,x_values, y_values, subplots):
     fig = px.line(data,
-                  x="cycle",
+                  x=x_values,
                   y=y_values,
                   color=subplots,
                   title=f"{y_values} von {name}",
@@ -197,7 +208,7 @@ def plot_points(data, name, y_values, subplots):
                   )
     fig.update_layout(
         yaxis_title=y_values,
-        xaxis_title='Zyklken',
+        xaxis_title=x_values,
         template='simple_white',
     )
     return fig
