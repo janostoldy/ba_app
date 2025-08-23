@@ -34,8 +34,7 @@ def plot_colors(colors):
     plt.show()
 
 # Beispiel: Farben extrahieren
-colors = extract_colors_from_soc('TUM_Colors.soc')
-plot_colors(colors)
+#colors = extract_colors_from_soc('TUM_Colors.soc')
 
 col = {'TUM:Emphasize:Green': '#a2ad00',
  'TUM:Emphasize:Ivory': '#dad7cb',
@@ -96,3 +95,18 @@ col = {'TUM:Emphasize:Green': '#a2ad00',
  'TUM:Secondary:Gray:20%': '#ccccc6',
  'TUM:Secondary:Gray:50%': '#808080',
  'TUM:Secondary:Gray:80%': '#333333'}
+
+color = {
+    'TUM:Extended:Maroon': '#9c0d16',
+    'TUM:Extended:Red': '#c4071b',
+    'TUM:Extended:Red:80%': '#d03949',
+    'TUM:Extended:Red:50%': '#e2838d',
+    'TUM:Extended:Red:20%': '#f3cdd1',
+    'TUM:Extended:Violet:20%': '#e1cede',
+    'TUM:Emphasize:LighterBlue': '#98c6ea',
+    'TUM:Emphasize:LightBlue': '#64a0c8',
+    'TUM:Primary:Blue': '#0073cf',
+    'TUM:Secondary:DarkBlue:80%': '#3375a9',
+    'TUM:Secondary:DarkerBlue:80%': '#335c7a',
+}
+plot_colors(color)

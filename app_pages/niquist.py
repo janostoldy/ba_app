@@ -133,15 +133,19 @@ def niqhist_app():
         if plot == "Niqhist":
             x_data = "calc_rezohm"
             y_data = "calc_imzohm"
+            log_x = False
         elif plot == "Bode-Re":
             x_data = "freqhz"
             y_data = "calc_rezohm"
+            log_x = True
         elif plot == "Bode-Im":
             x_data = "freqhz"
             y_data = "calc_imzohm"
+            log_x = True
         elif plot == "Bode-Phase":
             x_data = "freqhz"
             y_data = "phasezdeg"
+            log_x = True
 
         if not graphs:
             if big_plot == "soc":
@@ -174,7 +178,7 @@ def niqhist_app():
             if not kHz:
                 data_mod = data_mod[data_mod["freqhz"] != 1999]
             name = f"Niqhist plot von {p}"
-            fig = plot_graphs(data_mod, name,subplots,x_data,y_data)
+            fig = plot_graphs(data_mod, name,subplots,x_data,y_data, log_x)
             con2.plotly_chart(fig)
             space, col2 = con2.columns([4, 1])
             download_button(col2,fig,key)
@@ -198,11 +202,12 @@ def plot_points(data, name, y_values, subplots):
     )
     return fig
 
-def plot_graphs(data, name, subplots, x, y):
+def plot_graphs(data, name, subplots, x, y, log):
     fig = px.line(data,
                   x=x,
                   y=y,
                   color=subplots,
+                  log_x = True,
                   title=name,
                   markers=True,
                   color_discrete_sequence=list(colors.values()),
