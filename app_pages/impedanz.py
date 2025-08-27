@@ -1,20 +1,31 @@
 import streamlit as st
+from galvani import BioLogic
 
 from classes.datenbank import Database
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 from scipy.interpolate import interp1d
+import xml.etree.ElementTree as ET
+
+from config import mes_spalten
+
 
 def basytec_app():
-    st.title("Basytec")
-    DB = Database("Impedanz")
-
     with st.sidebar:
-        radio = st.radio(
+        side = st.radio(
             "Wähle eine Option",
             ("Berechnen", "Vergleichen")
         )
+    if side == "Berechnen":
+        berechnen_app()
+    else:
+        vergleichen_app()
+
+def berechnen_app():
+    st.title("Basytec - Calc")
+    DB = Database("Impedanz")
 
     files = DB.get_imp_files()
     data = []
@@ -43,6 +54,7 @@ def basytec_app():
         imp_data = pd.concat([imp_data, filtered_df], ignore_index=True)
         imp_data["c_rate"] = pd.to_numeric(imp_data["c_rate"], errors="coerce")
 
+    imp_data = imp_data.drop(imp_data[(imp_data["typ"] == "Biologic") & (imp_data["freq"] == 1001.9983)].index)
     con1 = st.container(border=False)
 
     col1, col2 = con1.columns(2)
@@ -139,6 +151,76 @@ def basytec_app():
         con.subheader("Ersatzschaltbild")
         con.image("00_Test_Data/basytec.png")
 
+def vergleichen_app():
+    st.title("Basytec - Compare")
+    DB = Database("Comp")
+    xcts = DB.get_basytec()
+    con1 = st.container(border=True)
+    con1.subheader("Messung")
+    basy_file = con1.file_uploader("Datei Auswählen", type=["csv"], accept_multiple_files=False)
+    con1.subheader("Vergleichswerte")
+    bio_file = con1.file_uploader("Datei Auswählen", type=["mpr"], accept_multiple_files=False)
+
+    if basy_file is not None:
+        basy_data = pd.read_csv(basy_file)
+
+    if bio_file is not None:
+        bio_data = pd.DataFrame()
+        mpr_file = BioLogic.MPRfile(bio_file)
+        bio_data_imp = pd.DataFrame(mpr_file.data)
+        bio_data['freq'] = bio_data_imp['freq/Hz']
+        bio_data['re'] = bio_data_imp['Re(Z)/Ohm']
+        bio_data['im'] = bio_data_imp['-Im(Z)/Ohm']
+        bio_data['phase'] = bio_data_imp['Phase(Z)/deg']
+        bio_data['c_rate'] = 0
+
+    if bio_file is not None and basy_file is not None:
+        c_rate = basy_data['c_rate'].unique()
+        for c in c_rate:
+            bio_c = bio_data[bio_data['c_rate'] == c]
+            basy_c = basy_data[basy_data['c_rate'] == c]
+            xcts_c = xcts[xcts['c_rate'] == 0.25]
+
+            re_f_basy = interp1d(basy_c["freq"], basy_c["re"], kind='quadratic', fill_value='extrapolate')
+            re_f_xcts = interp1d(xcts_c["freq"], xcts_c["re"], kind='quadratic', fill_value='extrapolate')
+            im_f_basy = interp1d(basy_c["freq"], basy_c["im"], kind='quadratic', fill_value='extrapolate')
+            im_f_xcts = interp1d(xcts_c["freq"], xcts_c["im"], kind='quadratic', fill_value='extrapolate')
+
+            x_common = np.linspace(min(basy_c["freq"].min(), bio_c["freq"].min()),
+                                   max(basy_c["freq"].max(), bio_c["freq"].max()), 200)
+
+            re_inter_basy = re_f_basy(x_common)
+            re_inter_xcts = re_f_xcts(x_common)
+            im_inter_basy = im_f_basy(x_common)
+            im_inter_xcts = im_f_xcts(x_common)
+
+            Z_basy = re_inter_basy + 1j * im_inter_basy
+            Z_xcts = re_inter_xcts + 1j * im_inter_xcts
+
+            Y_total = 1 / Z_basy - 1 / Z_xcts
+            Z_total = 1 / Y_total
+
+            re_diff = Z_total.real
+            im_diff = Z_total.imag
+            ph_diff = np.arctan2(im_diff, re_diff)
+            calc_c = pd.DataFrame({
+                're': re_diff,
+                'im': im_diff,
+                'phase': ph_diff,
+                'c_rate': c,
+                'freq': x_common,
+            })
+
+            st.write("Realteil")
+            plot_comp(basy_c, bio_c, calc_c, 're')
+            st.write("Imaginärteil")
+            plot_comp(basy_c, bio_c, calc_c, 'im')
+            st.write("Phase")
+            plot_comp(basy_c, bio_c, calc_c, 'phase')
+
+
+
+
 def plot_curves(imp_data, x, y, c_rates):
     for c in c_rates:
         con = st.container(border=False)
@@ -189,3 +271,11 @@ def plot_basy(data):
     con.subheader(f"Data")
     con.dataframe(data)
 
+def plot_comp(basy, bio, calc_c, plt):
+    con = st.container(border=False)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=calc_c['freq'],y=calc_c[plt], mode="lines",name="Berechnet"))
+    fig.add_trace(go.Scatter(x=bio['freq'],y=bio[plt], mode="lines",name="Referenz"))
+    fig.add_trace(go.Scatter(x=basy['freq'],y=basy[plt], mode="lines",name="Gemessen"))
+    fig.update_xaxes(type="log")
+    con.plotly_chart(fig)

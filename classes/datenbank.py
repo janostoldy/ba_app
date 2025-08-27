@@ -266,6 +266,11 @@ class Database:
             result = s.execute(text(sql), params).fetchall()
         return result
 
+    def get_basytec(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * FROM basytec"""
+        return conn.query(sql)
+
     def update_files(self, zelle):
         conn = st.connection("sql", type="sql")
         sql = "SELECT cap_p_cyc FROM zellen WHERE id = :zelle"
