@@ -38,16 +38,16 @@ class Analyse:
         return hashlib.sha256(hash_input.encode()).hexdigest()
 
     def add_relax(self, file_path, cycle, Zelle, save_data):
-        try:
+        #try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
                 if save_data:
                     self.DB.insert_file(data_name, cycle, "Thermische-Relaxation", Zelle, "Relaxation")
-        except Exception as e:
-            raise Exception(f"Fehler bei Relaxation -> {e}")
+        #except Exception as e:
+         #   raise Exception(f"Fehler bei Relaxation -> {e}")
 
     def analyze_Aeging(self, file_path, cycle, Zelle, save_data, bar):
-        #try:
+        try:
             n_files = len(file_path)
             for i, data_path in enumerate(file_path):
                 data_name = os.path.basename(data_path)
@@ -64,8 +64,8 @@ class Analyse:
                     cycle = int(cycle)
                     self.DB.update_zelle(Zelle, cycle)
                     self.DB.insert_file(data_name, cycle, "Aeging-Analyse", Zelle, "Ageing")
-        #except Exception as e:
-            #raise Exception(f"Fehler bei Ageing-Analyse -> {e}")
+        except Exception as e:
+            raise Exception(f"Fehler bei Ageing-Analyse -> {e}")
 
     def calc_niquist_data(self, eis_data,save_data):
         results = []
@@ -125,7 +125,7 @@ class Analyse:
             self.DB.df_in_DB(df=niquist_df, table_name='eis_points')
 
     def analyze_EIS_data(self, file_path, cycle, Zelle, save_data):
-        #try:
+        try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
                 mpr_file = BioLogic.MPRfile(data_path)
@@ -173,8 +173,8 @@ class Analyse:
                     for eis in eis_values:
                         self.DB.df_in_DB(df=eis, table_name='eis')
 
-        #except Exception as e:
-            #raise Exception(f"Fehler bei EIS-Analyse -> {e}")
+        except Exception as e:
+            raise Exception(f"Fehler bei EIS-Analyse -> {e}")
 
     def analyze_DEIS_data(self, df, data_name, cycle, Zelle, save_data):
         try:

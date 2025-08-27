@@ -82,16 +82,18 @@ class Database:
 
     def insert_file(self, file, cycle, Info="", Zelle="", Typ=""):
         conn = st.connection("sql", type="sql")
+        cap_p_cycle = self.get_cap_cycle(Zelle)
+        cap_cycle = int(cycle * cap_p_cycle.values[0])
         sql = """
-            INSERT INTO files (name, datum, info, cycle, zelle, typ)
-            VALUES (:name, CURRENT_TIMESTAMP, :info, :cycle, :zelle, :typ)
+            INSERT INTO files (name, datum, info, cycle, zelle, typ, cap_cycle)
+            VALUES (:name, CURRENT_TIMESTAMP, :info, :cycle, :zelle, :typ, :cap_cycle)
             ON CONFLICT (name) DO UPDATE SET
                 datum = CURRENT_TIMESTAMP,
                 info = EXCLUDED.info,
                 cycle = EXCLUDED.cycle,
                 zelle = EXCLUDED.zelle,
                 typ = EXCLUDED.typ"""
-        values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ}
+        values = {"name": file, "info": Info, "cycle": cycle, "zelle": Zelle, "typ": Typ, "cap_cycle": cap_cycle}
         with conn.session as s:
             s.execute(text(sql), values)
             s.commit()
@@ -164,6 +166,12 @@ class Database:
     def get_zell_cycle(self, zelle, Max=True):
         conn = st.connection("sql", type="sql")
         sql = "SELECT cycle FROM zellen WHERE id = :zelle"
+        params = {"zelle": zelle}
+        return conn.query(sql, params=params)
+
+    def get_cap_cycle(self, zelle):
+        conn = st.connection("sql", type="sql")
+        sql = "SELECT cap_p_cyc FROM zellen WHERE id = :zelle"
         params = {"zelle": zelle}
         return conn.query(sql, params=params)
 
