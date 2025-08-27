@@ -5,7 +5,7 @@ import kaleido
 
 from src.user import User, get_known_user
 from app_pages.home import home_app
-from app_pages.niquist import points_app, niqhist_app
+from app_pages.niquist import eis_app
 from app_pages.db import add_data_app, edit_data_app
 from app_pages.kapa import kapazitaet_app
 from app_pages.biologic import biologic_app
@@ -64,8 +64,7 @@ if st.session_state["authenticated"]:
     eingang_page = st.Page(pruefung_app, title="Prüfungen", icon="📥")
     kapa_page = st.Page(kapazitaet_app, title="Kapazität", icon="📈")
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
-    niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
-    points_page = st.Page(points_app, title="Points", icon="📈")
+    eis_page = st.Page(eis_app, title="EIS", icon="📈")
     basytec_page = st.Page(basytec_app, title="Basytec", icon="📈")
 
     user = st.session_state["User"]
@@ -82,9 +81,8 @@ if st.session_state["authenticated"]:
                     zellen_page,
                     eingang_page,
                     kapa_page,
-                    niqhist_page,
+                    eis_page,
                     dva_page,
-                    points_page,
                     basytec_page,
                 ],
             }
@@ -108,9 +106,8 @@ if st.session_state["authenticated"]:
                 "Anwendungen": [
                     eingang_page,
                     kapa_page,
-                    niqhist_page,
+                    eis_page,
                     dva_page,
-                    points_page,
                     basytec_page,
                 ],
             }

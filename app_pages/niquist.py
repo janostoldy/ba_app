@@ -6,6 +6,17 @@ from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
 from src.plotting_functions import colors, download_button
 
+def eis_app():
+    with st.sidebar:
+        side = st.radio(
+            "Wähle eine Option",
+            ("Kurven", "Punkte")
+        )
+    if side == "Kurven":
+        niqhist_app()
+    else:
+        points_app()
+
 def points_app():
     st.title("Points")
     DB = Database("Points")
@@ -90,8 +101,8 @@ def points_app():
             con2.dataframe(data_mod)
 
 def niqhist_app():
-    st.title("Niqhist")
-    DB = Database("Niqhist")
+    st.title("EIS")
+    DB = Database("EIS")
     alldata = DB.get_all_eis()
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)

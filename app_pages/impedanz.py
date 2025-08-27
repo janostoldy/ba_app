@@ -9,6 +9,13 @@ from scipy.interpolate import interp1d
 def basytec_app():
     st.title("Basytec")
     DB = Database("Impedanz")
+
+    with st.sidebar:
+        radio = st.radio(
+            "Wähle eine Option",
+            ("Berechnen", "Vergleichen")
+        )
+
     files = DB.get_imp_files()
     data = []
     c_rates = []
