@@ -6,8 +6,8 @@ import numpy as np
 import plotly.express as px
 from scipy.interpolate import interp1d
 
-def impedanz_app():
-    st.title("Impedanz")
+def basytec_app():
+    st.title("Basytec")
     DB = Database("Impedanz")
     files = DB.get_imp_files()
     data = []
@@ -91,7 +91,14 @@ def impedanz_app():
                 "datei": "Berechnet",
                 "typ": "calc"
             })
-            lut_impedanz = pd.concat([lut_impedanz, diff_frame], ignore_index=True)
+            lut_data = pd.DataFrame({
+                "c_rate": c,
+                "re": re_diff,
+                "im": im_diff,
+                "phase": ph_diff,
+                "freq": x_common,
+            })
+            lut_impedanz = pd.concat([lut_impedanz, lut_data], ignore_index=True)
             imp_data = pd.concat([imp_data, diff_frame], ignore_index=True)
 
     if cut:
@@ -118,6 +125,8 @@ def impedanz_app():
         y_data = "phase"
         plot_curves(imp_data, x_data, y_data, c_rates)
     elif plot == "Basy":
+        if con1.button("In DB speichern", type='secondary', use_container_width=True):
+            DB.df_in_DB(lut_impedanz,'basytec')
         plot_basy(lut_impedanz)
         con = st.container()
         con.subheader("Ersatzschaltbild")

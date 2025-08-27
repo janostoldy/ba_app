@@ -13,7 +13,7 @@ from app_pages.dva import dva_app
 from app_pages.zellen import add_zelle_app, show_zelle_app
 from app_pages.pruefung import pruefung_app
 from app_pages.safion import safion_app
-from app_pages.impedanz import impedanz_app
+from app_pages.impedanz import basytec_app
 
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
@@ -66,7 +66,7 @@ if st.session_state["authenticated"]:
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     niqhist_page = st.Page(niqhist_app, title="Niqhist", icon="📈")
     points_page = st.Page(points_app, title="Points", icon="📈")
-    impedanz_page = st.Page(impedanz_app, title="Impedanz", icon="📈")
+    basytec_page = st.Page(basytec_app, title="Basytec", icon="📈")
 
     user = st.session_state["User"]
     if user.role == "user":
@@ -85,7 +85,7 @@ if st.session_state["authenticated"]:
                     niqhist_page,
                     dva_page,
                     points_page,
-                    impedanz_page,
+                    basytec_page,
                 ],
             }
         )
@@ -111,7 +111,7 @@ if st.session_state["authenticated"]:
                     niqhist_page,
                     dva_page,
                     points_page,
-                    impedanz_page,
+                    basytec_page,
                 ],
             }
         )
