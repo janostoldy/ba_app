@@ -1,7 +1,5 @@
 import re
 import io
-import warnings
-
 
 colors = {
         'TUM:Extended:Violet': '#69085a',  # Violett
@@ -70,15 +68,14 @@ def download_button(col, fig, key):
 
     # --- Export als SVG ---
     # Temporären Buffer für SVG-Datei anlegen
-    try:
-        svg_buffer = io.BytesIO()
-        fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
-        svg_data = svg_buffer.getvalue()
-        dis = False
-    except Exception as e:
-        svg_data = b""
-        dis = True
-        warnings.warn(e)
+    #try:
+    svg_buffer = io.BytesIO()
+    fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
+    svg_data = svg_buffer.getvalue()
+    dis = False
+    #except Exception as e:
+        #svg_data = b""
+        #dis = True
     col.download_button(
         label="Download als SVG",
         data=svg_data,
