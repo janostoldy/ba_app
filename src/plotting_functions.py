@@ -1,6 +1,6 @@
 import re
 import io
-import plotly.io as pio
+import warnings
 
 
 colors = {
@@ -78,6 +78,7 @@ def download_button(col, fig, key):
     except Exception as e:
         svg_data = b""
         dis = True
+        warnings.warn(e)
     col.download_button(
         label="Download als SVG",
         data=svg_data,
