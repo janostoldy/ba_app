@@ -67,6 +67,9 @@ def berechnen_app():
     dis = False if plot != "Basy" else True
     calc = col1.toggle("Calc_Field", disabled=dis)
     lut_impedanz = pd.DataFrame()
+    options = ["typ", "c_rate"]
+    subplot = col1.segmented_control("Subplots", options, default=options[0])
+
     if calc or dis:
         for c in c_rates:
             data = imp_data[imp_data["c_rate"] == c]
@@ -130,19 +133,19 @@ def berechnen_app():
     if plot == "Niqhist":
         x_data = "re"
         y_data = "im"
-        plot_curves(imp_data, x_data, y_data, c_rates)
+        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Re":
         x_data = "freq"
         y_data = "re"
-        plot_curves(imp_data, x_data, y_data, c_rates)
+        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Im":
         x_data = "freq"
         y_data = "im"
-        plot_curves(imp_data, x_data, y_data, c_rates)
+        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Phase":
         x_data = "freq"
         y_data = "phase"
-        plot_curves(imp_data, x_data, y_data, c_rates)
+        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Basy":
         if con1.button("In DB speichern", type='secondary', use_container_width=True):
             DB.df_in_DB(lut_impedanz,'basytec')
@@ -221,19 +224,25 @@ def vergleichen_app():
             plot_comp(basy_c, bio_c, calc_c, 'phase')
 
 
-
-
-def plot_curves(imp_data, x, y, c_rates):
+def plot_curves(imp_data, x, y, c_rates, subplot):
+    if subplot == "Typ":
+        sub = "typ"
+        plt = c_rates
+    else:
+        sub = "c_rates"
+        plt = [""]
     for c in c_rates:
         con = st.container(border=False)
         con.subheader(f"{c}-C")
         data = imp_data[imp_data["c_rate"] == c]
         data = data[data["freq"] <= 1900]
+        log = True if y == "freq" else False
+
         fig = px.line(data,
                       x=x,
-                      #log_x=True,
+                      log_x=log,
                       y=y,
-                      color="typ",
+                      color=subplot,
                       hover_data=['freq']
                       )
         con.plotly_chart(fig)
