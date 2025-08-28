@@ -75,7 +75,7 @@ def download_button(col, fig, key):
         fig.write_image(svg_buffer, format='svg', engine='kaleido', width=1200, height=800)
         svg_data = svg_buffer.getvalue()
         dis = False
-    except Exception:
+    except Exception as e:
         svg_data = b""
         dis = True
     col.download_button(

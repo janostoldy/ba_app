@@ -163,16 +163,18 @@ def vergleichen_app():
 
     if basy_file is not None:
         basy_data = pd.read_csv(basy_file)
+        st.write(basy_data)
 
     if bio_file is not None:
         bio_data = pd.DataFrame()
         mpr_file = BioLogic.MPRfile(bio_file)
         bio_data_imp = pd.DataFrame(mpr_file.data)
         bio_data['freq'] = bio_data_imp['freq/Hz']
-        bio_data['re'] = bio_data_imp['Re(Z)/Ohm']
-        bio_data['im'] = bio_data_imp['-Im(Z)/Ohm']
+        z = bio_data_imp['|Z|/Ohm']
         bio_data['phase'] = bio_data_imp['Phase(Z)/deg']
-        bio_data['c_rate'] = 0
+        bio_data['re'] = z * np.cos(bio_data['phase'])
+        bio_data['im'] = z * np.sin(bio_data['phase'])
+        bio_data['c_rate'] = round(bio_data_imp['I/mA']/2500 / 1250) * 1250
 
     if bio_file is not None and basy_file is not None:
         c_rate = basy_data['c_rate'].unique()
@@ -229,7 +231,7 @@ def plot_curves(imp_data, x, y, c_rates):
         data = data[data["freq"] <= 1900]
         fig = px.line(data,
                       x=x,
-                      log_x=True,
+                      #log_x=True,
                       y=y,
                       color="typ",
                       hover_data=['freq']
