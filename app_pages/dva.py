@@ -1,9 +1,8 @@
-
 import plotly.express as px
 import streamlit as st
 import pandas as pd
 from src.filtern import daten_filter
-from src.plotting_functions import download_button
+from src.plotting_functions import colors, download_button
 from classes.datenbank import Database
 
 def dva_app():
@@ -16,6 +15,7 @@ def dva_app():
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)
     filt_data = alldata.iloc[0:0].copy()
+    single = False
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
     else:
@@ -23,37 +23,80 @@ def dva_app():
         key = 0
 
         for z in zelle:
-            for c in cycle:
-                file = DB.get_file(c, z,"DVA")
-                if file.empty:
-                    continue
+            if single:
+                for c in cycle:
+                    file = DB.get_file(c, z,"DVA")
+                    if file.empty:
+                        continue
+                    con2 = st.container(border=False)
+                    con2.divider()
+                    filt_data = pd.concat([filt_data, file])
+                    data, points = DB.get_dva(file["name"].values[0])
+                    data = pd.DataFrame(data)
+                    points = pd.DataFrame(points)
+                    fig = plot_single_dva(data,file["name"].values[0])
+                    fig = plot_dva_points(fig, data, points)
+                    con2.plotly_chart(fig)
+                    space1, col1, col2 = con2.columns([1, 20, 3])
+                    df_points = pd.DataFrame(points["value"].values.reshape(1, -1), columns=points["point"].values)
+                    col1.dataframe(df_points, hide_index=True)
+                    download_button(col2,fig,key)
+                    key += 1
+            else:
+                data = pd.DataFrame()
+                points = pd.DataFrame()
                 con2 = st.container(border=False)
                 con2.divider()
-                filt_data = pd.concat([filt_data, file])
-                data, points = DB.get_dva(file["name"].values[0])
-                data = pd.DataFrame(data)
-                points = pd.DataFrame(points)
-                fig = plot_dva(data,file["name"].values[0])
-                fig = plot_dva_points(fig, data, points)
+                for c in cycle:
+                    file = DB.get_file(c, z,"DVA")
+                    if file.empty:
+                        continue
+                    filt_data = pd.concat([filt_data, file])
+                    single_data, single_points = DB.get_dva(file["name"].values[0])
+                    single_data = pd.DataFrame(single_data)
+                    single_points = pd.DataFrame(single_points)
+                    single_points = pd.DataFrame(single_points["value"].values.reshape(1, -1), columns=single_points["point"].values)
+                    single_data["Zyklus"] = c
+                    single_points["Zyklus"] = c
+                    data = pd.concat([data, single_data])
+                    points = pd.concat([points, single_points])
+                fig = plot_multiple_dva(data,z)
                 con2.plotly_chart(fig)
                 space1, col1, col2 = con2.columns([1, 20, 3])
-                df_points = pd.DataFrame(points["value"].values.reshape(1, -1), columns=points["point"].values)
-                col1.dataframe(df_points, hide_index=True)
-                download_button(col2,fig,key)
+                col1.dataframe(points, hide_index=True)
+                download_button(col2, fig, key)
                 key += 1
 
         con1.subheader("Ausgewählte Daten:")
         con1.write(filt_data)
         con1.subheader("Plots:")
 
-def plot_dva(Data, name):
+def plot_multiple_dva(data,name):
+    # Plot erstellen
+    fig = px.line(data,
+                  x='qqomah_smoove',
+                  y='calc_dv_dq',
+                  title=f'Differential Voltage Analysis (DVA) von: {name}',
+                  labels={'dV/dQ': 'dV/dQ (V/Ah)'},
+                  color='Zyklus',
+                  hover_data=[data.index],)
+    fig.update_layout(
+        yaxis_title='dV/dQ (V/Ah)',
+        xaxis_title='Kapazität (Ah)',
+        template='simple_white',
+    )
+    return fig
+
+def plot_single_dva(Data, name):
     # Plot erstellen
     fig = px.line(Data,
                   x='qqomah_smoove',
                   y='calc_dv_dq',
                   title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'},
-                  hover_data=[Data.index],)
+                  hover_data=[Data.index],
+                  color_discrete_sequence=list(colors.values()),
+                  )
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',
         xaxis_title='Kapazität (Ah)',
