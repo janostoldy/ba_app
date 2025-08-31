@@ -74,7 +74,7 @@ def berechnen_app():
         for c in c_rates:
             data = imp_data[imp_data["c_rate"] == c]
             data = data[data["freq"] <= 1900]
-            basy = data[data["typ"] == "Basitec"]
+            basy = data[data["typ"] == "Basytec"]
             biol = data[data["typ"] == "Biologic"]
 
             re_f_basy = interp1d(basy["freq"], basy["re"],kind='quadratic', fill_value='extrapolate')
@@ -254,7 +254,7 @@ def plot_c_rates(imp_data, x, y, c_rates, ):
 
         fig = px.line(data,
                       x=x,
-                      log_x=log,
+                      log_x=True,
                       y=y,
                       color="typ",
                       color_discrete_sequence=list(colors_short.values()),
