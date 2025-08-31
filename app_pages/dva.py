@@ -79,6 +79,7 @@ def plot_multiple_dva(data,name):
                   title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'},
                   color='Zyklus',
+                  color_discrete_sequence=list(colors.values()),
                   hover_data=[data.index],)
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',
@@ -95,7 +96,6 @@ def plot_single_dva(Data, name):
                   title=f'Differential Voltage Analysis (DVA) von: {name}',
                   labels={'dV/dQ': 'dV/dQ (V/Ah)'},
                   hover_data=[Data.index],
-                  color_discrete_sequence=list(colors.values()),
                   )
     fig.update_layout(
         yaxis_title='dV/dQ (V/Ah)',
