@@ -7,8 +7,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.interpolate import interp1d
-import xml.etree.ElementTree as ET
-
+from src.plotting_functions import colors_short
 from config import mes_spalten
 
 
@@ -45,12 +44,13 @@ def berechnen_app():
     imp_data = pd.DataFrame()
     for plt in df.itertuples(index=False):
         data = DB.get_impedanz(plt.name,plt.c_rate)
-        if data[0].typ == "Basitec":
+        if data[0].typ == "Basytec":
             min_time = min(row.time for row in data)
             filtered_rows = [row for row in data if row.time == min_time]
         else:
             filtered_rows = data
         filtered_df = pd.DataFrame(filtered_rows, columns=colums)
+        filtered_df = filtered_df.sort_values('freq')
         imp_data = pd.concat([imp_data, filtered_df], ignore_index=True)
         imp_data["c_rate"] = pd.to_numeric(imp_data["c_rate"], errors="coerce")
 
@@ -67,7 +67,7 @@ def berechnen_app():
     dis = False if plot != "Basy" else True
     calc = col1.toggle("Calc_Field", disabled=dis)
     lut_impedanz = pd.DataFrame()
-    options = ["typ", "c_rate"]
+    options = ["Setup", "C-Rate"]
     subplot = col1.segmented_control("Subplots", options, default=options[0])
 
     if calc or dis:
@@ -129,23 +129,18 @@ def berechnen_app():
         lut_impedanz = lut_impedanz[lut_impedanz["freq"] <= fmax]
         lut_impedanz = lut_impedanz[lut_impedanz["freq"] >= fmin]
 
-
     if plot == "Niqhist":
         x_data = "re"
         y_data = "im"
-        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Re":
         x_data = "freq"
         y_data = "re"
-        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Im":
         x_data = "freq"
         y_data = "im"
-        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Bode-Phase":
         x_data = "freq"
         y_data = "phase"
-        plot_curves(imp_data, x_data, y_data, c_rates, subplot)
     elif plot == "Basy":
         if con1.button("In DB speichern", type='secondary', use_container_width=True):
             DB.df_in_DB(lut_impedanz,'basytec')
@@ -153,6 +148,13 @@ def berechnen_app():
         con = st.container()
         con.subheader("Ersatzschaltbild")
         con.image("00_Test_Data/basytec.png")
+        subplot = "Pass"
+
+    if subplot == "Setup":
+        plot_c_rates(imp_data, x_data, y_data, c_rates)
+    else:
+        plot_typ(imp_data, x_data, y_data)
+
 
 def vergleichen_app():
     st.title("Basytec - Compare")
@@ -223,14 +225,26 @@ def vergleichen_app():
             st.write("Phase")
             plot_comp(basy_c, bio_c, calc_c, 'phase')
 
+def plot_typ(imp_data, x, y):
+    for t in ["Basytec","Biologic"]:
+        con = st.container(border=False)
+        con.subheader(t)
+        data = imp_data[imp_data["typ"] == t]
+        data = data[data["freq"] <= 1900]
+        log = True if y == "freq" else False
 
-def plot_curves(imp_data, x, y, c_rates, subplot):
-    if subplot == "Typ":
-        sub = "typ"
-        plt = c_rates
-    else:
-        sub = "c_rates"
-        plt = [""]
+        fig = px.line(data,
+                      x=x,
+                      log_x=log,
+                      y=y,
+                      color="c_rate",
+                      color_discrete_sequence=list(colors_short.values()),
+                      hover_data=['freq']
+                      )
+        con.plotly_chart(fig)
+        con.write(data)
+
+def plot_c_rates(imp_data, x, y, c_rates, ):
     for c in c_rates:
         con = st.container(border=False)
         con.subheader(f"{c}-C")
@@ -242,7 +256,8 @@ def plot_curves(imp_data, x, y, c_rates, subplot):
                       x=x,
                       log_x=log,
                       y=y,
-                      color=subplot,
+                      color="typ",
+                      color_discrete_sequence=list(colors_short.values()),
                       hover_data=['freq']
                       )
         con.plotly_chart(fig)

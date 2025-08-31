@@ -311,7 +311,7 @@ class Analyse:
             meta_data['delta_cap'] = 0
             meta_data['c_rate'] = meta_data_in['C-Rate']
             meta_data['datei'] = data_name
-            meta_data['typ'] = "Basitec"
+            meta_data['typ'] = ("Basytec")
 
             for i in range(0, len(data_columns), 4):
                 data_group = row[data_columns[i:i + 4]].values
