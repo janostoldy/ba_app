@@ -8,8 +8,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy.interpolate import interp1d
 from src.plotting_functions import colors_short
-from config import mes_spalten
-
 
 def basytec_app():
     with st.sidebar:

@@ -14,6 +14,7 @@ from app_pages.zellen import add_zelle_app, show_zelle_app
 from app_pages.pruefung import pruefung_app
 from app_pages.safion import safion_app
 from app_pages.impedanz import basytec_app
+from app_pages.ecd import ecd_app
 
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
@@ -66,6 +67,7 @@ if st.session_state["authenticated"]:
     dva_page = st.Page(dva_app, title="DVA", icon="📈")
     eis_page = st.Page(eis_app, title="EIS", icon="📈")
     basytec_page = st.Page(basytec_app, title="Basytec", icon="📈")
+    ecd_page = st.Page(ecd_app, title="ECD", icon="🎛️")
 
     user = st.session_state["User"]
     if user.role == "user":
@@ -75,7 +77,8 @@ if st.session_state["authenticated"]:
                 "Start": [home_page],
                 "Analysen": [
                     biologic_page,
-                    safion_page
+                    safion_page,
+                    ecd_page,
                 ],
                 "Anwendungen": [
                     zellen_page,
@@ -101,7 +104,8 @@ if st.session_state["authenticated"]:
                 ],
                 "Analysen": [
                     biologic_page,
-                    safion_page
+                    safion_page,
+                    ecd_page,
                 ],
                 "Anwendungen": [
                     eingang_page,

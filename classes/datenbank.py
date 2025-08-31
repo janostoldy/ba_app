@@ -242,11 +242,17 @@ class Database:
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
         return result
+    def get_imp_bio(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * 
+                 FROM imp 
+                 WHERE typ = 'Biologic' AND c_rate = 0.25"""
+        return conn.query(sql)
 
     def get_imp_files(self):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * 
-                 FROM files l
+                 FROM files 
                  where typ = 'imp'"""
         return conn.query(sql)
     def get_imp_rate(self,Datei):
