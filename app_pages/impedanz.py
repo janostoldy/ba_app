@@ -152,7 +152,7 @@ def berechnen_app():
 
     if subplot == "Setup":
         plot_c_rates(imp_data, x_data, y_data, c_rates)
-    else:
+    elif subplot == "C-Rate":
         plot_typ(imp_data, x_data, y_data)
 
 
@@ -254,7 +254,7 @@ def plot_c_rates(imp_data, x, y, c_rates, ):
 
         fig = px.line(data,
                       x=x,
-                      log_x=True,
+                      log_x=log,
                       y=y,
                       color="typ",
                       color_discrete_sequence=list(colors_short.values()),
