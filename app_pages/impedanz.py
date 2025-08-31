@@ -147,7 +147,7 @@ def berechnen_app():
         plot_basy(lut_impedanz)
         con = st.container()
         con.subheader("Ersatzschaltbild")
-        con.image("00_Test_Data/basytec.png")
+        con.image("src/pic/basytec.png")
         subplot = "Pass"
 
     if subplot == "Setup":
