@@ -3,14 +3,22 @@ import io
 
 colors = {
         'TUM:Extended:Violet': '#69085a',  # Violett
-        'TUM:Extended:Navy': '#0f1a5f',  # Dunkelblau / Indigo
         'TUM:Primary:Blue': '#0073cf',  # Blau
         'TUM:Extended:Teal': '#00778a',  # Türkis / Cyan
         'TUM:Extended:Forest': '#007c30',  # Grün
         'TUM:Extended:Lime': '#679a1d',  # Gelbgrün
+        'TUM:Extended:yellow80': '#ffe333',  # Gelb
         'TUM:Extended:Goldenrod': '#f9ba00',  # Dunkelgelb
         'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
         'TUM:Extended:Maroon': '#9c0d16',  # Dunkelrot, noch unter Rot
+        'TUM:Extended:Red': '#c4071b'  # Rot
+    }
+colors_short = {
+        'TUM:Extended:Violet': '#69085a',  # Violett
+        'TUM:Primary:Blue': '#0073cf',  # Blau
+        'TUM:Extended:Forest': '#007c30',  # Grün
+        'TUM:Extended:yellow80': '#ffe333',  # Gelbgrün
+         'TUM:Extended:Pumpkin': '#d64c13',  # Rötliches Orange
         'TUM:Extended:Red': '#c4071b'  # Rot
     }
 
