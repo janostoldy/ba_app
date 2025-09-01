@@ -39,7 +39,7 @@ def opjective(x):
 
 frequencies = np.logspace(np.log10(5), np.log10(1600), num=26)
 frequencies = np.array(frequencies, dtype=float)
-x0 = np.ones(8)*0.001
+x0 = np.ones(8)
 bnds = [(0, 1000)] * 8
 res = minimize(opjective, x0, bounds=bnds, method="L-BFGS-B", options={"maxiter":1000})
 print("Optimale Inputs:", res.x)

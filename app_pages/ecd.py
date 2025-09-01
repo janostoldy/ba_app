@@ -17,7 +17,6 @@ def ecd_app():
         'freq': bio["freq"],
         'typ': 'biologic'
     })
-
     # --- Anregung ---
     #st.subheader("Frequenzen:")
     #with st.expander("Erweitern"):
@@ -50,14 +49,14 @@ def ecd_app():
     col1, col2, col3, col4 = con1.columns([2,2,3,3])
     # --- Parameter ---
     x = np.zeros(8)
-    x[0] = col1.number_input("L",value=0.7,step=0.01)
-    x[1] = col2.number_input("R_s / milliOhm",value=20.0,step=0.1)
-    x[3] = col3.number_input("C_SEI",value=20.0,step=0.1)
-    x[6] = col3.number_input("alpha_SEI",value=1.0,step=0.1)
-    x[2] = col3.number_input("R_SEI / milliOhm",value=10.0,step=0.1)
-    x[5] = col4.number_input("C_dl",value=20.0,step=0.1)
-    x[7] = col4.number_input("alpha_ct",value=1.0,step=0.1)
-    x[4] = col4.number_input("R_ct",value=10.0,step=0.1)
+    x[0] = col1.number_input("L",value=0.43,step=0.01)
+    x[1] = col2.number_input("R_s / milliOhm",value=21.9,step=0.1)
+    x[3] = col3.number_input("C_SEI",value=0.8,step=0.1)
+    x[6] = col3.number_input("alpha_SEI",value=0.8,step=0.1)
+    x[2] = col3.number_input("R_SEI / milliOhm",value=4.4,step=0.1)
+    x[5] = col4.number_input("C_dl",value=2.8,step=0.1)
+    x[7] = col4.number_input("alpha_ct",value=0.8,step=0.1)
+    x[4] = col4.number_input("R_ct",value=7.3,step=0.1)
     frequencies = np.logspace(np.log10(5), np.log10(1600), num=26)
     frequencies = np.array(frequencies, dtype=float)
     st.subheader("Berechnung:")
@@ -72,8 +71,23 @@ def ecd_app():
                   x='Re',
                   y='Im',
                   color='typ',
-                  hover_name='freq',
+                  hover_data='freq',
                   )
     st.plotly_chart(fig)
+    fig = px.line(data,
+                  x='freq',
+                  y='Re',
+                  log_x=True,
+                  color='typ',
+                  )
+    st.plotly_chart(fig)
+    fig = px.line(data,
+                  x='freq',
+                  y='Im',
+                  log_x=True,
+                  color='typ',
+                  )
+    st.plotly_chart(fig)
+
 
 
