@@ -1,5 +1,5 @@
 import numpy as np
-def model(x,f):
+def model(x,f, sec):
     L = x[0]
     Rs = (x[1] * 0.001)
     RSEI = x[2] * 0.001
@@ -13,8 +13,11 @@ def model(x,f):
     ZL = 1j * omega * L * 0.000001
     Zcsei = 1 / (CSEI * (1j * omega) ** alphaSEI)
     Zsei = 1 / (1 / RSEI + 1 / Zcsei)
-    Zcdl = 1 / (Cdl * (1j * omega) ** alphaCT)
-    Zct = 1 / (1 / Rct + 1 / Zcdl)
+    if sec:
+        Zcdl = 1 / (Cdl * (1j * omega) ** alphaCT)
+        Zct = 1 / (1 / Rct + 1 / Zcdl)
+    else:
+        Zct = 0
     Z = ZL + Rs + Zsei + Zct
     y1 = Z.real
     y2 = Z.imag * -1

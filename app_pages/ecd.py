@@ -46,21 +46,30 @@ def ecd_app():
 
     con1 = st.container(border=True)
     con1.image("src/pic/ecb_lib.png", use_container_width=True)
+    sec = con1.toggle("Zweiter RC-Glied")
     col1, col2, col3, col4 = con1.columns([2,2,3,3])
     # --- Parameter ---
     x = np.zeros(8)
     x[0] = col1.number_input("L",value=0.43,step=0.01)
     x[1] = col2.number_input("R_s / milliOhm",value=21.9,step=0.1)
     x[3] = col3.number_input("C_SEI",value=0.8,step=0.1)
-    x[6] = col3.number_input("alpha_SEI",value=0.8,step=0.1)
+    #x[6] = col3.number_input("alpha_SEI",value=0.8,step=0.1)
+    x[6] = 1
     x[2] = col3.number_input("R_SEI / milliOhm",value=4.4,step=0.1)
-    x[5] = col4.number_input("C_dl",value=2.8,step=0.1)
-    x[7] = col4.number_input("alpha_ct",value=0.8,step=0.1)
-    x[4] = col4.number_input("R_ct",value=7.3,step=0.1)
+    if sec:
+        x[5] = col4.number_input("C_dl",value=2.8,step=0.1)
+        #x[7] = col4.number_input("alpha_ct",value=0.8,step=0.1)
+        x[7] = 1
+        x[4] = col4.number_input("R_ct",value=7.3,step=0.1)
+    else:
+        x[5] = 1
+        x[7] = 1
+        x[4] = 1
     frequencies = np.logspace(np.log10(5), np.log10(1600), num=26)
     frequencies = np.array(frequencies, dtype=float)
     st.subheader("Berechnung:")
-    Re, Im = model(x,frequencies)
+    Re, Im = model(x,frequencies, sec)
+    st.subheader("Beschreibung:")
     data = pd.concat([data_df, pd.DataFrame({
         'Re': Re,
         'Im': Im,
