@@ -51,16 +51,16 @@ def ecd_app():
     # --- Parameter ---
     x = np.zeros(8)
     x[0] = col1.number_input("L",value=0.43,step=0.01)
-    x[1] = col2.number_input("R_s / milliOhm",value=21.9,step=0.1)
-    x[3] = col3.number_input("C_SEI",value=0.8,step=0.1)
+    x[1] = col2.number_input("R_s / milliOhm",value=22.5,step=0.1)
+    x[3] = col3.number_input("C_SEI",value=0.15,step=0.1)
     #x[6] = col3.number_input("alpha_SEI",value=0.8,step=0.1)
     x[6] = 1
-    x[2] = col3.number_input("R_SEI / milliOhm",value=4.4,step=0.1)
+    x[2] = col3.number_input("R_SEI / milliOhm",value=4.7,step=0.1)
     if sec:
-        x[5] = col4.number_input("C_dl",value=2.8,step=0.1)
+        x[5] = col4.number_input("C_dl",value=0.9,step=0.1)
         #x[7] = col4.number_input("alpha_ct",value=0.8,step=0.1)
         x[7] = 1
-        x[4] = col4.number_input("R_ct",value=7.3,step=0.1)
+        x[4] = col4.number_input("R_ct",value=5.4,step=0.1)
     else:
         x[5] = 1
         x[7] = 1

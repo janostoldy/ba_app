@@ -15,7 +15,9 @@ def dva_app():
     con1 = st.container(border=True)
     cycle, zelle = daten_filter(con1, alldata)
     filt_data = alldata.iloc[0:0].copy()
-    single = False
+    col1, col2 = st.columns(2)
+    tab = col2.toggle("Tabellen anzeigen")
+    single = col1.toggle("Einzelne Plots")
     if not cycle or not zelle:
         st.warning("Keine Werte ausgewählt")
     else:
@@ -41,6 +43,8 @@ def dva_app():
                     df_points = pd.DataFrame(points["value"].values.reshape(1, -1), columns=points["point"].values)
                     col1.dataframe(df_points, hide_index=True)
                     download_button(col2,fig,key)
+                    if tab:
+                        con2.dataframe(data, hide_index=True)
                     key += 1
             else:
                 data = pd.DataFrame()
@@ -65,6 +69,8 @@ def dva_app():
                 space1, col1, col2 = con2.columns([1, 20, 3])
                 col1.dataframe(points, hide_index=True)
                 download_button(col2, fig, key)
+                if tab:
+                    con2.dataframe(data, hide_index=True)
                 key += 1
 
         con1.subheader("Ausgewählte Daten:")

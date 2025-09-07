@@ -7,7 +7,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.interpolate import interp1d
-from src.plotting_functions import colors_short
+from src.plotting_functions import colors_short, download_button
 
 def basytec_app():
     with st.sidebar:
@@ -224,7 +224,7 @@ def vergleichen_app():
             plot_comp(basy_c, bio_c, calc_c, 'phase')
 
 def plot_typ(imp_data, x, y):
-    for t in ["Basytec","Biologic"]:
+    for z, t in enumerate(["Basytec","Biologic"]):
         con = st.container(border=False)
         con.subheader(t)
         data = imp_data[imp_data["typ"] == t]
@@ -240,10 +240,11 @@ def plot_typ(imp_data, x, y):
                       hover_data=['freq']
                       )
         con.plotly_chart(fig)
+        download_button(con, fig, z)
         con.write(data)
 
 def plot_c_rates(imp_data, x, y, c_rates, ):
-    for c in c_rates:
+    for z, c in enumerate(c_rates):
         con = st.container(border=False)
         con.subheader(f"{c}-C")
         data = imp_data[imp_data["c_rate"] == c]
@@ -259,6 +260,7 @@ def plot_c_rates(imp_data, x, y, c_rates, ):
                       hover_data=['freq']
                       )
         con.plotly_chart(fig)
+        download_button(con, fig, z)
         con.write(data)
 
 def plot_basy(data):
