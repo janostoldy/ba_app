@@ -1,0 +1,359 @@
+\chapter{Vorgehen}%
+\label{chap:GrundlagenundMethoden}%
+
+\tikzstyle{diamond} = [draw, shape aspect=2.5, shape=diamond, minimum width=3cm, minimum height=0.8cm, text centered, align=center]
+\tikzstyle{rectangle} = [draw, shape=rectangle, minimum width=3cm, minimum height=0.8cm, text centered, align=center]
+\tikzstyle{arrow} = [thick,->,>=Stealth, arrowlabel/.style={right}]
+
+Dieses Kapitel beschreibt die beiden Messsysteme und wie die gewonnenen Daten genutzt werden, um zum einen die
+Impedanz des Zyklisierer aus der
+
+Zunächst wird das System zur Untersuchung der Einflüsse von Fomrierungseffekten auf die Zellimpedanz.
+Als Erstes wird auf die verwendete Hardware und Software eingegangen.
+Im Anschluss werden die eingesetzen Ladeprotokolle und der Prüfplan erklärt.
+
+Danach wird das Setup von BaSyTec beschrieben.
+Hier wird ebenfalls zunächst auf Hardware und Software eingegangen, bevor der Prüfplan erläutert wird.
+
+\section{Untersuchung der Formierung}
+\label{sec:form}
+Die Zyklisieren und Prüfen der Zellen erfolgt mit einer Biologic-Einheit, die über einen Laborcomputer mit der Testsoftware verbunden ist.
+Auf diesem Rechner werden alle Messdaten geplant, gestartet und gespeichert.
+Nach Abschluss der Prüfung werden die Ergebnisse auf das NAS-Laufwerk des Lehrstuhls übertragen.
+Von dort lassen sich die Dateien über eine Streamlit-WebApp verarbeiten, darstellen und in eine postgresql-Datenbank
+speichern.
+
+\subsection{Hardware}
+\label{subsec:hardware-bio}
+Im folgenden Abschnitt wird die verwendete Hardware des Biologic-Prüfaufbaus beschrieben.
+\subsubsection{Zelle}
+Zur Untersuchung der Formierung werden neue Sony US18650VTC5A verwendet.
+Die Eigenschaften dieser Zellen sind in \autoref{tab: sony-zelle} aufgeführt.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Parameter & Wert \\
+        \midrule
+        Kapazität & \SI{2500}{\milli\ampere\hour} \\
+        Ladespannung & \SI{4.2}{\volt} \\
+        untere Abschaltspannung & \SI{2.5}{\volt} \\
+        Max. Ladestrom & \SI{6}{\ampere} \\
+        Max. Entladestrom & \SI{35}{\ampere} \\
+        Temperaturbereich Laden & \SIrange{0}{45}{\celsius} \\
+        Temperaturbereich Entladen & \SIrange{-20}{60}{\celsius} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Eigenschaften der Zellen vom Typ Sony US18650VTC5A}
+    \label{tab: sony-zelle}
+\end{table}
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/Sony-VTC5A-2}
+    \caption{Sony US18650VTC5A~\cite{sony_zelle}}
+    \label{fig:sony-pic}
+\end{figure}
+
+\subsubsection{Klimakammer}
+Aufgrund der temperaturabhängigen Eigenschaften von Batteriezellen ist es wichtig die Zellen während der Versuche
+in einer Klimakammer zu betrieben.
+Dies gewährleistet eine konstante Umgebungstemperatur während der gesamten Prüfungsdauer.
+Die kontrollierten Bedingungen reduzieren externe Einflüsse auf die Messergebnisse und ermöglichen eine
+reproduzierbare Durchführung der Prüfungen.
+Dadurch lassen sich Veränderungen der Zellparameter klar der getesteten Belastung zuordnen.
+Als Klimakammer wird eine Binder KB-400 verwendet.
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/binder}
+    \caption{Binder KB-400 Klimakammer~\cite{binder_kammer}}
+    \label{fig:binder}
+\end{figure}
+
+\subsection{Software}
+\label{subsec:software-bio}
+Als Testsoftware wird die
+
+\subsection{Prüfplan}
+\label{subsec:pruefplan-bio}
+Der Prüfplan orientiert sich an einer bestehenden Messreihe und wurde für diese Untersuchung übernommen, wobei nur
+die Ladeparameter gezielt abgeändert werden, um deren Einfluss auf die Impedanz zu analysieren.
+Die Versuche werden bei einer Temperatur von \SI{25}{\celsius} durchgeführt.
+Es werden drei Ladebereiche des \gls{soc} betrachtet: ein enger Bereich von \SIrange{20}{80}{\percent}, ein
+erweiterter Bereich von \SIrange{10}{90}{\percent} sowie eine vollständige Ausnutzung des Ladebereichs von
+\SIrange{0}{100}{\percent}.
+Für jeden Ladebereich werden drei verschiedene C-Raten angewendet: \SI{0,5}{C}, \SI{1}{C} und \SI{2}{C}.
+Zur Untersuchen des Einflusses der Temperatur wird zusätzlich ein weiterer Versuch bei einer erhöhten Temperatur von
+\SI{50}{\celsius} durchgeführt.
+Dabei kommt eine C-Rate von \SI{1}{C} und ein \gls{soc}-Bereich von \SIrange{10}{90}{\percent} zum Einsatz.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        Zelle     & Strom (C-Rate) &  Ladebereich (\% SoC)       & Temperatur (\si{\degreeCelsius}) \\
+        \midrule
+        JT\_001   & \SI{1.0}{C}    & 10–90                & 50 \\
+        JT\_002   & \SI{0.5}{C}    & 0–100                & 25 \\
+        JT\_003   & \SI{2.0}{C}    & 20–80                & 25 \\
+        JT\_004   & \SI{2.0}{C}    & 10–90                & 25 \\
+        JT\_005   & \SI{2.0}{C}    & 0–100                & 25 \\
+        JT\_006   & \SI{1.0}{C}    & 20–80                & 25 \\
+        JT\_007   & \SI{1.0}{C}    & 10–90                & 25 \\
+        JT\_008   & \SI{1.0}{C}    & 0–100                & 25 \\
+        JT\_009   & \SI{0.5}{C}    & 10–90                & 25 \\
+        JT\_010   & \SI{0.5}{C}    & 20–80                & 25 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Übersicht der verwendeten Zellen und Ladeparameter}
+    \label{tab:ladeparameter_gesamt}
+\end{table}
+
+Nach einer Initialen Kapazitätsmessung wird die Impedanz der Zelle auf 15 verschiedenen \glspl{soc} zwischen
+\SI{250}{\milli\ampere\hour} und \SI{2000}{\milli\ampere\hour} in einem Frequenzbereich von \SIrange{0,2}{5000}{\hertz} bestimmt.
+Außerdem werden auf jedem \gls{soc}-Niveau \gls{deis}-Messungen bei Ladeströmen zwischen \SI{0,25}{C} und \SI{4}{C}
+und einer Frequenz von \SI{200}{\hertz} durchgeführt.
+Vor jeder \gls{eis}-Messung werden die Zellen zunächst \SI{4}{\hour} ruhen gelassen, um ein thermisches und
+elektrochemisches Gleichgewicht herzustellen.
+Nach der \gls{eis}-Messung ruhen die Zellen ebenfalls für \SI{30}{\minute}.
+Im Anschluss werden die Zellen mit unterschiedlichen Parametern fünfmal zyklisch mit \gls{cccv} ge- und entladen, bevor
+wieder eine
+Impedanzprüfung durchgeführt wird.
+Nach 25 Zyklen wird noch einmal eine Kapazitätsmessung und eine \gls{ocv}-Messung bei \SI{0,05}{C}
+mit \gls{cc} durchgeführt.
+Die \gls{ocv} wird verwendet um Eigenschaften der Elektroden im Verlauf der Zyklisierung zu untersuchen.
+Danach wird der Prüfplan erneut gestartet.
+
+\begin{figure} [h]
+    \hspace{3cm}% Abstand nach rechts verschieben
+    \centering
+    \begin{tikzpicture}[node distance=0.75cm and 5]
+
+    % Nodes
+    \node (start) [rectangle] {Kapazitätsmessung};
+    \node (eis) [rectangle,below=of start] {EIS und DEIS Prüfung};
+    \node (ageing1) [diamond, below=of eis] {5 Zyklen};
+    \node (kapa) [rectangle, below=of ageing1] {Kapazitätsmessung};
+    \node (ocv) [rectangle, below=of kapa] {OCV-Messung};
+
+    % Arrows
+    \draw [arrow] (start) -- (eis);
+    \draw [arrow] (eis) -- (ageing1);
+    \draw [arrow] (ageing1) to[out=0, in=0, looseness=1.5] node[arrowlabel] {4-Mal wiederholen} (eis);
+    \draw [arrow] (ageing1) --node[arrowlabel] {nach 25 Zyklen} (kapa);
+    \draw [arrow] (kapa) -- (ocv);
+
+    \end{tikzpicture}
+    \caption{Prüfplan für die Untersuchung von Formierungseffekten}\label{fig:pruefplan-bio}
+\end{figure}
+
+\section{Untersuchung des Impedanz von Basytec}
+\label{sec:basytec}
+Mithilfe von Multi-Sine-Anregung kann die dauer einer \gls{eis}-Messung stark reduziert werden.
+Für stationäre Messungen ist die Dauer der Messung nicht besonders relevant, da sich die Eigenschaften der Zelle während
+dieser Messungen nur gering verändern.
+Im dynamischen Fall ist es jedoch wichtig die Dauer der Messung möglichst gering zu halten, da sich die Zellen unter
+Belastung durchaus stark erwärmen können.
+Mit dem Zyklisierer von Biologic sind leider keine Multi-Sine-Anregungen möglich.
+Daher wird für dynamische Messungen ein Setup von BaSyTec verwendet.
+Auf diesem Setup werden dann durch ein Inspectrum.C-Messgerät der Firma Safion Impedanzmessungen durchgeführt.
+Für die Untersuchung des Impedanzeinflusses des Prüfaufbaus werden mehrere \gls{eis}- und \gls{deis}-Messungen mit dem
+Zyklisierer der Firmer Biologic durchgeführt.
+Anschließend wird dieselbe Zelle in den Batteriezyklisierer der Firma BaSyTec überführt, wo die identischen
+Messreihen mithilfe des Inspectrum.C-Messgerät durchgeführt werden.
+Es ist wichtig, dass die Testbedingungen auf beiden Geräten identisch sind, um vergleichbare Messungen zu
+gewährleisten und ausschließlich den Einfluss der Zyklisierer zu untersuchen.
+Daher dürfen sich weder der \gls{soc} noch die Temperatur, die Frequenzen oder die Ströme, bei denen die Messungen
+durchgeführt werden, ändern.
+Die Untersuchung wird auf \SI{50}{\%} des \gls{soc} und bei \SI{25}{\degreeCelsius} durchgeführt.
+Als Zelle wird eine Panasonic NCR18650PF verwendet, welche schon einige Zyklen durchlaufen ist, um Einflüsse der
+Formierung zu vermeiden.
+
+\subsection{Hardware}
+\label{subsec:hardware-basy}
+Im folgenden Abschnitt wird die für den Basytec-Prüfaufbau eingesetzte Hardware erläutert.
+
+\subsubsection{Zelle}
+Um Einflüsse der \gls{sei}-Bildung zu eliminieren wird eine bereits zyklisiserte Zelle verwendet.
+Diese Zelle vom Typ Panasonic NCR18650PF\@.
+Die Eigenschaften dieser Zellen sind in \autoref{tab: panasonic-zelle} aufgeführt.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Parameter & Wert \\
+        \midrule
+        Kapazität & \SI{2900}{\milli\ampere\hour} \\
+        Ladespannung & \SI{4.2}{\volt} \\
+        untere Abschaltspannung & \SI{2.5}{\volt} \\
+        Max. Ladestrom & \SI{2}{\ampere} \\
+        Max. Entladestrom & \SI{10}{\ampere} \\
+        Temperaturbereich Laden & \SIrange{0}{60}{\celsius} \\
+        Temperaturbereich Entladen & \SIrange{-20}{60}{\celsius} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Eigenschaften der Zellen vom Typ Panasonic NCR18650PF}
+    \label{tab: panasonic-zelle}
+\end{table}
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/panasonic}
+    \caption{Panasonic NCR18650PF~\cite{panasonic}}
+    \label{fig:panasonic-pic}
+\end{figure}
+
+
+
+\subsubsection{Klimakammer}
+Um die Impedanz des Zyklisierers zu untersuchen ist es noch wichtiger die Temperatur der Zelle konstant zu halten.
+Daher befinden sich die Zellen im BaSyTec-Setup ebenfalls in einer Klimmakammer.
+Hier kommt eine Klimakammer der Firma Mermet zum Einsatz.
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/mermet}
+    \caption{Mermet IP110eco Klimakammer~\cite{mermet_chamber}}
+    \label{fig:mermet}
+\end{figure}
+
+\subsubsection{Zyklisierer}
+Das Laden und Entladen auf diesem Setup erfolgt über ein BaSyTec-XCTS\@.
+Die BaSyTec-Batterietestsoftware ermöglicht die Erstellung und Bearbeitung von Testplänen für den Zyklisierer.
+In den Plänen können zusätzlich CAN-Parameter integriert werden, die zum Starten von Impedanzmessungen genutzt werden.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/BaSyTec_XCTS}
+    \caption{BaSyTec XCTS~\cite{basytec}}
+    \label{fig:xcts}
+\end{figure}
+
+\subsubsection{Impedanz-Messsystem}
+Da der XCTS keine eigenständigen \gls{eis}-Messungen durchführen kann, wird das System Inspectrum.10-5 ES der
+Firma Safion GmbH eingesetzt.
+Es besteht aus einem Messgerät und einem Multiplexer.
+Die Spannungsantwort wird über seperate Sense-Leitungen erfasst, wobei eine Vierleiter-Messung durchgeführt wird.
+Das Messgerät erfasst die Impedanz mit einer Multisine-Anregung präzise an bis zu 32 Frequenzpunkten in einer Sekunde~\cite{inspectrum}.
+Die Frequenzpunkte können manuell anhand einer linearen oder logarithmischen Verteilung des Spektrums ausgewählt werden.
+Dadurch lässt sich die Messauflösung an die experimentellen Anforderungen anpassen.
+Um die Frequenzpunkte festzulegen, muss ein Computer mit dem Messgerät verbunden werden.
+Über den Computer können mit der Inspectrum Suite Software die Frequenzpunkte verändert werden.
+Andere Parameter des Anregungssignals, wie die Amplitude ode Dauer der Anregung, könne ebenfalls angepasst werden.
+
+Das Gerät kann über eine CAN-Schnittstelle konfiguriert, angesteuert und ausgelesen werden, wodurch eine einfache
+integriert in übergeordnete Testinfrastrukturen möglich ist.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/inspectrum_meas}
+    \caption{Inspectrum.10-5 ES 105~\cite{inspectrum}}
+    \label{fig:inspectrum_meas}
+\end{figure}
+Mit dem Multiplexer lässt sich das Messsystem auf bis zu 20 Kanäle erweitern, was die Untersuchung mehrere Zellen mit
+einem einzelnen Messgerät ermöglicht.
+In dieser Arbeit wird die Kombination dieser beiden Geräte als Safion Einheit bezeichnet.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/inspectrum_mux}
+    \caption{Inspectrum.10-5 MUX~\cite{inspectrum}}
+    \label{fig:inspectrum_mux}
+\end{figure}
+
+\subsubsection{Raspberry Pi}
+Ein Raspberry Pi ist ein kompakter aber leistungsfähiger Einplatinencomputer.
+Er ist aufgrund seiner geringen Kosten und einfachen Handhabung eine hervorragende Plattform für eine
+große Anzahl an Anwendungen~\cite{raspberry_rs485}.
+Die kombination mit einem CAN-HAT ermöglicht es den Pis untereinander und dem Inspectrum zu kommunizieren.
+Das System ist in einer Master-Slave-Architektur aufgebaut.
+Ein Master-Raspberry-Pi koordiniert Anfragen der Slave-Raspberry-Pis und verhindert Konflikte zwischen Messungen.
+In dem Setup werden mehrere Pis vom Typ Raspberry Pi3b+ verwendet, die in einem 3d-gedruckten Gehäuse angeordnet sind.
+Jeder Pi ist mit einem adaptiven Lüfter verbunden, der das Überhitzen der Geräte verhindert.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figures/hardware/raspberry}
+    \caption{Raspberry Pi mit CAN-Hat~\cite{raspberry_rs485}}
+    \label{fig:raspberry}
+\end{figure}
+
+\subsection{Software}
+\label{subsec:software-basy}
+Zur Gewährleistung eines sicheren Kanalwechsels wurde ein Algorithmus entwickelt, der dem Safion fehlerfreie Messungen
+auf verschiedenen Kanälen ermöglicht.
+Ohne diesem Verfahren würde bei gleichzeitiger Messung ein Kanal den andere überschreiben.
+Zur vermeidung solcher Konflikte übernimmt ein Master-Raspberry-Pi die Steuerung und Koordination der Anfragen mehrere
+Slave-Raspberry-Pis.
+Dabei blockiert der Master eine neue Messung sollte der Safion noch mit einer anderen beschäftigt sein.
+
+Die Testsoftware von Basytec ermöglicht es im Prüfprogramm Signale über CAN-Bus zu senden.
+Neben periodisch gesendeten Nachrichten die Daten wie Zeit, aktuelle Zellspannung, angelegten Strom, Temperatur
+und geladene Kapazität enthalten wird zu Beginn des Prüfplans die Nennkapazität der Zelle übermittelt.
+Vor jeder Messung wird die aktuelle C-Rate übertragen.
+Zum Starten und Beenden von \gls{eis}-Messungen wird eine spezifische Nachricht gesendet.
+Nachdem die Slave-Pis diese Nachricht empfangen haben, fragen sie beim Master-Pi an ob der Safion gerade mit einer
+anderen Messung beschäftigt ist.
+In diesem Fall erstellt der Master-Pi eine Liste der Slave-Pis, die eine Messung durchführen wollen, und
+bearbeitet diese der Reihe nach ab.
+Erhält ein Slave-Pi die Freigabe des Masters schickt er eine CAN-Nachrricht an den Safion, der daraufhin eine
+\gls{eis}-Messung durchführt und die erhaltenen Daten über CAN-Bus an den Pi zurück übermittelt.
+Der Pi verwendet die übermittelte Nennkapazität und aktuelle C-Rate, um die Zeit zu berechnen, die benötigt wird,
+bis die Zelle \SI{0,5}{\%} geladen ist.
+In dieses Zeitraums führt er fortlaufend Messungen, bis der Messvorgang beendet wird.
+Nachdem er diese beendet hat, gibt er den Safion wieder frei und übermittelt dies dem Master-Pi.
+Dieser übergibt die Freugabe zur Messung dann an den Nächsten Slave-Pi.
+
+\subsection{Prüfplan}
+\label{subsec:pruefplan-basy}
+Um auf einen \gls{soc} von \SI{50}{\%} zu kommen, wird die Zelle erst vollkommen entladen und danach mit der Hälfte
+ihrer Nennkapazität wieder geladen.
+Danach wird eine \gls{deis}-Messung mit vordefinierter C-Rate durchgeführt.
+Wahrend der Messung wird die Zelle \si{5}{\%} ihrer Kapazität geladen.
+Diese Ladungsmenge wird ihr im nächsten Schritt wieder abgezogen.
+Nach einer kurzen Pause beginnt die nächste \gls{deis}-Messung mit einer anderen C-Rate.
+Als C-Raten werden \SI{0.25}{C}, \SI{0.33}{C}, \SI{0.5}{C}, \SI{1}{C}, \SI{2}{C}, \SI{3}{C} verwendet, um ein
+breites Spektrum abzudecken.
+Auf dem Setup von Biologic wird die Prüfung noch einmal wiederholt, wobei die Impedanzmessung bei \SI{2}{C}
+und \SI{3}{C} auf zwei Messungen aufgeteilt, um die Zelle wieder abkühlen zu lassen und Temperatureinflüsse gering zu halten.
+
+\begin{figure} [h]
+    \hspace{3cm}% Abstand nach rechts verschieben
+    \centering
+    \begin{tikzpicture}[node distance=0.75cm and 5]
+
+    % Nodes
+    \node (dis1) [diamond] {Entladen auf \SI{0}{\%} SOC};
+    \node (cha1) [diamond, below=of dis1] {Laden auf \SI{50}{\%} SOC};
+    \node (deis) [rectangle, below=of cha1] {DEIS-Messung};
+    \node (dis2) [rectangle, below=of deis] {Entladen};
+
+    % Arrows
+    \draw [arrow] (dis1) -- (cha1);
+    \draw [arrow] (cha1) -- (deis);
+    \draw [arrow] (deis) -- (dis2);
+    \draw [arrow] (dis2) to[out=0, in=0, looseness=1.5]
+        node[arrowlabel] {\shortstack{5-Mal wiederholen mit \\ unterschiedlichen C-Raten}} (deis);
+
+    \end{tikzpicture}
+    \caption{Prüfplan für die Untersuchung von Formierungseffekten}\label{fig:pruefplan}
+    \label{fig:pruefplan-basy}
+\end{figure}
+
+\subsection{Berechnung der Impedanz}
+Das Messgerät, die Zelle und der Zyklisierer befinden sich in einer parallelschalten~\ref{fig: schaltplan-basy}.
+Daraus ergibt sich die Formel~\ref{eq:imp2} für die Impedanz des Zyklisieres.
+
+\begin{figure}[H]
+    \centering
+    \input{figures/ecd/ecd_basy}
+    \caption{Erstazschaltbild des Prüfaufbaus mit BaSyTec XCTS, Inspectrum und Batteriezelle}\label{fig:schaltbild}
+    \label{fig: schaltplan-basy}
+\end{figure}
+
+\begin{equation}
+    \frac{1}{Z_{ges}} = \frac{1}{Z_{Zelle}} +  \frac{1}{Z_{XCTS}}
+\label{eq:imp1}
+\end{equation}
+\begin{equation}
+    Z_{XCTS} = \frac{Z_{ges} Z_{Zelle}}{Z_{ges} - Z_{Zelle}}
+\label{eq:imp2}
+\end{equation}
+
