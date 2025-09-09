@@ -157,6 +157,31 @@ def berechnen_app():
 
 def anpassen_app():
     st.title("Biologic - Anpassen")
+    DB = Database("Comp")
+    xcts = DB.get_impedanz_basy()
+    xcts.drop(['voltage', 'current', 'delta_cap', 'phase', 'datei', 'typ'], axis=1, inplace=True)
+    dfs = [subdf.reset_index(drop=True) for _, subdf in xcts.groupby("c_rate")]
+    st.subheader("Daten-Basytec:")
+    for rate in dfs:
+        t_start = rate["time"].min()
+        rate['qcharge'] = (rate['time']-t_start+1) * rate['c_rate'] * 2900 / 3600
+        with st.expander(f"C-Rate {rate['c_rate'][0]}"):
+            st.write(rate)
+
+    st.subheader("Look-Up Werte:")
+    table = pd.DataFrame()
+    for rate in dfs:
+        freq = [subdf.reset_index(drop=True) for _, subdf in rate.groupby("freq")]
+        for f in freq:
+            f = f.sort_values(by="time").reset_index(drop=True)
+            first_re = f.iloc[0]['re']
+            first_im = f.iloc[0]['im']
+            f['re'] = f['re'] - first_re
+            f['im'] = f['im'] - first_im
+            table = pd.concat([table, f], ignore_index=True)
+    st.dataframe(table)
+
+    bio = DB.get_impedanz_bio()
 
 def vergleichen_app():
     st.title("Basytec - Compare")
