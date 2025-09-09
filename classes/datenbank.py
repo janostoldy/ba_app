@@ -272,6 +272,11 @@ class Database:
             result = s.execute(text(sql), params).fetchall()
         return result
 
+    def get_impedanz_basy(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * FROM imp WHERE typ = 'Basytec'"""
+        return conn.query(sql)
+
     def get_basytec(self):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * FROM basytec"""
