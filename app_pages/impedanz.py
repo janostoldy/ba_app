@@ -13,10 +13,12 @@ def basytec_app():
     with st.sidebar:
         side = st.radio(
             "Wähle eine Option",
-            ("Berechnen", "Vergleichen")
+            ("Berechnen", "Anpassen","Vergleichen")
         )
     if side == "Berechnen":
         berechnen_app()
+    elif side == "Anpassen":
+        anpassen_app()
     else:
         vergleichen_app()
 
@@ -153,6 +155,8 @@ def berechnen_app():
     elif subplot == "C-Rate":
         plot_typ(imp_data, x_data, y_data)
 
+def anpassen_app():
+    st.title("Biologic - Anpassen")
 
 def vergleichen_app():
     st.title("Basytec - Compare")
