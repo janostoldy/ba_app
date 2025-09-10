@@ -1,5 +1,4 @@
 import streamlit as st
-from fontTools.merge.util import first
 from galvani import BioLogic
 
 from classes.datenbank import Database
@@ -8,8 +7,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.spatial import cKDTree
-
-from scipy.interpolate import interp1d
+from scipy.interpolate import griddata, interp1d
+from scipy.signal import savgol_filter
 from src.plotting_functions import colors_short, download_button
 
 def basytec_app():
@@ -185,6 +184,7 @@ def anpassen_app():
             st.write(rate)
 
     st.subheader("Look-Up Werte:")
+    smoove_bev = st.toggle('Glätten vorher')
     table = pd.DataFrame()
     for rate in basy_dfs:
         freq = [subdf.reset_index(drop=True) for _, subdf in rate.groupby("freq")]
@@ -192,12 +192,19 @@ def anpassen_app():
             f = f.sort_values(by="time").reset_index(drop=True)
             first_re = f.iloc[0]['re']
             first_im = f.iloc[0]['im']
+            if smoove_bev:
+                f['re'] =  savgol_filter( f['re'].values, window_length=7, polyorder=2 )
+                f['im'] =  savgol_filter( f['im'].values, window_length=7, polyorder=2 )
+
             f['re'] = f['re'] - first_re
             f['im'] = f['im'] - first_im
             table = pd.concat([table, f], ignore_index=True)
     st.dataframe(table)
 
     st.subheader("Daten Anpassen:")
+    options = ['Nächster', 'Interpoliert']
+    opt = st.segmented_control("Art", options, label_visibility='collapsed',default='Nächster')
+    smoove_aft = st.toggle('Glätten nacher')
     data = pd.DataFrame()
     fig_after = go.Figure()
     fig_before = go.Figure()
@@ -210,23 +217,35 @@ def anpassen_app():
 
         bio_points = rate[["freq", "qcharge"]].values
 
-        re_interp = griddata(basy_points, values_re, bio_points, method="linear")
-        im_interp = griddata(basy_points, values_im, bio_points, method="linear")
+        re_interp = griddata(basy_points, values_re, bio_points, method="cubic")
+        im_interp = griddata(basy_points, values_im, bio_points, method="cubic")
 
-        tree = cKDTree(basy[["freq", "qcharge"]].values)
-        dist, idx = tree.query(rate[["freq", "qcharge"]].values, k=1)
-
+        tree = cKDTree(basy_points)
+        dist, idx = tree.query(bio_points, k=1)
 
 
         basy_matched = basy.iloc[idx].reset_index(drop=True)
         rate_reset = rate.reset_index(drop=True)
-        result = pd.DataFrame({
-            "freq": rate_reset["freq"],
-            "qcharge": rate_reset["qcharge"],
-            "re_diff": rate_reset["re"] - basy_matched["re"],
-            "im_diff": rate_reset["im"] - basy_matched["im"],
-            "c_rate": c_rate,
-        })
+
+        if opt == "Interpoliert":
+            result = pd.DataFrame({
+                "freq": rate["freq"],
+                "qcharge": rate["qcharge"],
+                "re_diff": rate["re"] - re_interp,
+                "im_diff": rate["im"] - im_interp,
+                "c_rate": c_rate,
+            })
+        else:
+            result = pd.DataFrame({
+                "freq": rate_reset["freq"],
+                "qcharge": rate_reset["qcharge"],
+                "re_diff": rate_reset["re"] - basy_matched["re"],
+                "im_diff": rate_reset["im"] - basy_matched["im"],
+                "c_rate": c_rate,
+            })
+        if smoove_aft:
+            result['re_diff'] = savgol_filter(result['re_diff'].values, window_length=5, polyorder=2)
+            result['im_diff'] = savgol_filter(result['im_diff'].values, window_length=5, polyorder=2)
         data = pd.concat([data, result], ignore_index=True)
         col = list(colors_short.values())
         fig_after.add_trace(go.Scatter(
@@ -248,7 +267,16 @@ def anpassen_app():
     col2.subheader("Nachher:")
     col2.plotly_chart(fig_after)
     st.dataframe(data)
-
+    fig = px.line(data, x="freq", y="re_diff", color="c_rate", color_discrete_sequence=list(colors_short.values()), log_x=True)
+    col2.plotly_chart(fig)
+    fig = px.line(bio, x="freq", y="re", color="c_rate", color_discrete_sequence=list(colors_short.values()), log_x=True)
+    col1.plotly_chart(fig)
+    fig = px.line(data, x="freq", y="im_diff", color="c_rate", color_discrete_sequence=list(colors_short.values()),
+                  log_x=True)
+    col2.plotly_chart(fig)
+    fig = px.line(bio, x="freq", y="im", color="c_rate", color_discrete_sequence=list(colors_short.values()),
+                  log_x=True)
+    col1.plotly_chart(fig)
 
 def vergleichen_app():
     st.title("Basytec - Compare")
