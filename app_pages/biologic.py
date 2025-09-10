@@ -3,6 +3,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from galvani import BioLogic
 import pandas as pd
+import numpy as np
 from config import mes_spalten
 from src.plotting_functions import get_linestyles
 

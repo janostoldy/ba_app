@@ -1,4 +1,5 @@
 import streamlit as st
+from fontTools.merge.util import first
 from galvani import BioLogic
 
 from classes.datenbank import Database
@@ -6,6 +7,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from scipy.spatial import cKDTree
+
 from scipy.interpolate import interp1d
 from src.plotting_functions import colors_short, download_button
 
@@ -158,19 +161,32 @@ def berechnen_app():
 def anpassen_app():
     st.title("Biologic - Anpassen")
     DB = Database("Comp")
+    col1, col2 = st.columns(2)
+
+    col1.subheader("Daten-Basytec:")
     xcts = DB.get_impedanz_basy()
     xcts.drop(['voltage', 'current', 'delta_cap', 'phase', 'datei', 'typ'], axis=1, inplace=True)
-    dfs = [subdf.reset_index(drop=True) for _, subdf in xcts.groupby("c_rate")]
-    st.subheader("Daten-Basytec:")
-    for rate in dfs:
+    basy_dfs = [subdf.reset_index(drop=True) for _, subdf in xcts.groupby("c_rate")]
+    for rate in basy_dfs:
         t_start = rate["time"].min()
         rate['qcharge'] = (rate['time']-t_start+1) * rate['c_rate'] * 2900 / 3600
-        with st.expander(f"C-Rate {rate['c_rate'][0]}"):
+        with col1.expander(f"C-Rate {rate['c_rate'][0]}"):
+            st.write(rate)
+
+    col2.subheader("Biologic:")
+    bio = DB.get_impedanz_bio()
+    bio.drop(['voltage', 'current', 'delta_cap', 'phase', 'datei', 'typ'], axis=1, inplace=True)
+    bio = bio[bio['freq'] < 1999]
+    bio_dfs = [subdf.reset_index(drop=True) for _, subdf in bio.groupby("c_rate")]
+    for rate in bio_dfs:
+        t_start = rate["time"].min()
+        rate['qcharge'] = (rate['time']-t_start+1) * rate['c_rate'] * 2900 / 3600
+        with col2.expander(f"C-Rate {rate['c_rate'][0]}"):
             st.write(rate)
 
     st.subheader("Look-Up Werte:")
     table = pd.DataFrame()
-    for rate in dfs:
+    for rate in basy_dfs:
         freq = [subdf.reset_index(drop=True) for _, subdf in rate.groupby("freq")]
         for f in freq:
             f = f.sort_values(by="time").reset_index(drop=True)
@@ -181,7 +197,58 @@ def anpassen_app():
             table = pd.concat([table, f], ignore_index=True)
     st.dataframe(table)
 
-    bio = DB.get_impedanz_bio()
+    st.subheader("Daten Anpassen:")
+    data = pd.DataFrame()
+    fig_after = go.Figure()
+    fig_before = go.Figure()
+    for i, rate in enumerate(bio_dfs):
+        c_rate = rate["c_rate"][0]
+        basy = table[table["c_rate"]==c_rate]
+        basy_points = basy[["freq", "qcharge"]].values
+        values_re = basy["re"].values
+        values_im = basy["im"].values
+
+        bio_points = rate[["freq", "qcharge"]].values
+
+        re_interp = griddata(basy_points, values_re, bio_points, method="linear")
+        im_interp = griddata(basy_points, values_im, bio_points, method="linear")
+
+        tree = cKDTree(basy[["freq", "qcharge"]].values)
+        dist, idx = tree.query(rate[["freq", "qcharge"]].values, k=1)
+
+
+
+        basy_matched = basy.iloc[idx].reset_index(drop=True)
+        rate_reset = rate.reset_index(drop=True)
+        result = pd.DataFrame({
+            "freq": rate_reset["freq"],
+            "qcharge": rate_reset["qcharge"],
+            "re_diff": rate_reset["re"] - basy_matched["re"],
+            "im_diff": rate_reset["im"] - basy_matched["im"],
+            "c_rate": c_rate,
+        })
+        data = pd.concat([data, result], ignore_index=True)
+        col = list(colors_short.values())
+        fig_after.add_trace(go.Scatter(
+            x=result["re_diff"],
+            y=result["im_diff"],
+            name=c_rate,
+            line=dict(color=col[i]),
+        ))
+
+        fig_before.add_trace(go.Scatter(
+            x= rate_reset["re"],
+            y= rate_reset["im"],
+            name=c_rate,
+            line=dict(color=col[i]),
+        ))
+    col1, col2 = st.columns(2)
+    col1.subheader("Vorher:")
+    col1.plotly_chart(fig_before)
+    col2.subheader("Nachher:")
+    col2.plotly_chart(fig_after)
+    st.dataframe(data)
+
 
 def vergleichen_app():
     st.title("Basytec - Compare")

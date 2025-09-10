@@ -277,6 +277,11 @@ class Database:
         sql = """SELECT * FROM imp WHERE typ = 'Basytec'"""
         return conn.query(sql)
 
+    def get_impedanz_bio(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * FROM imp WHERE typ = 'Biologic'"""
+        return conn.query(sql)
+
     def get_basytec(self):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * FROM basytec"""
