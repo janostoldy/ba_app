@@ -202,6 +202,17 @@ class Database:
            result = s.execute(text(sql), params).fetchall()
         return result
 
+    def get_initial_kapa(self, zelle):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT inital_kapa
+            FROM zellen
+            WHERE id = :zelle
+        """
+        params = {"zelle": zelle}
+        with conn.session as s:
+            result = s.execute(text(sql), params=params).fetchall()
+        return result
+
     def get_all_dva(self):
         conn = st.connection("sql", type="sql")
         sql = "SELECT * FROM files WHERE typ = 'DVA'"

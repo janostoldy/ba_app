@@ -29,6 +29,13 @@ def kapazitaet_app():
         con1.write(filt_data)
         con1.subheader("Plots:")
 
+        norm = con1.toggle("Startpunkt normieren")
+        if norm:
+            data = data[~data["datei"].str.contains("Characterization", na=False)]
+            data["kapa_norm"] = data.groupby("zelle")["kapa"].transform(lambda x: x - x.iloc[0])
+            plot_y = "kapa_norm"
+        else:
+            plot_y = "kapa"
         selected = con1.toggle("Alle Grafen in einem Plot")
         if selected :
             plots = ["Allen Zellen"]
@@ -51,7 +58,7 @@ def kapazitaet_app():
             if not selected:
                 data_mod = data[data[plot_name] == p]
             name = f"Kapazität von {plot_name} {p} in {einheit}"
-            fig = plot_kapa(data_mod, name,subplots,plot_x)
+            fig = plot_kapa(data_mod, name,subplots,plot_x,plot_y)
             con2.plotly_chart(fig)
             fig.update_layout(
                 template="plotly",  # <- wichtig!
@@ -77,11 +84,11 @@ def kapazitaet_app():
             con2.dataframe(data_mod)
 
 
-def plot_kapa(data,name,subplots,x):
+def plot_kapa(data,name,subplots,x,y):
     data = data.sort_values(by=x)
     fig = px.line(data,
                   x=x,
-                  y="kapa",
+                  y=y,
                   color=subplots,
                   title=name,
                   markers=True,  # Marker aktivieren

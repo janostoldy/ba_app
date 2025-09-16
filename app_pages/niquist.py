@@ -150,7 +150,7 @@ def niqhist_app():
                                           help="Wähle Wert der einzelnen Diagramme",
                                           default=options[2],
                                           disabled=graphs)
-        options = ["Niqhist", "Bode-Re", "Bode-Im", "Bode-Phase"]
+        options = ["Niqhist", "Bode-Re", "Bode-Im", "Bode-Phase","Bode-Z"]
         plot = col1.segmented_control("Plots",options,default=options[0])
         if plot == "Niqhist":
             x_data = "calc_rezohm"
@@ -167,6 +167,10 @@ def niqhist_app():
         elif plot == "Bode-Phase":
             x_data = "freqhz"
             y_data = "phasezdeg"
+            log_x = True
+        elif plot == "Bode-Z":
+            x_data = "freqhz"
+            y_data = "zohm"
             log_x = True
 
         if not graphs:

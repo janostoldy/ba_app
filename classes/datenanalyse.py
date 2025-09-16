@@ -211,6 +211,10 @@ class Analyse:
 
     def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
         try:
+            try:
+                inital = self.DB.get_initial_kapa(Zelle)
+            except:
+                inital = 0
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
                 mpr_file = BioLogic.MPRfile(data_path)
@@ -222,6 +226,7 @@ class Analyse:
                     'datei': [data_name],
                     'info': [f"Zelle {Zelle} nach Zyklus {cycle}"],
                     'kapa': [kapa],
+                    'kapa_norm': [kapa] - inital,
                 })
 
                 if save_data:
