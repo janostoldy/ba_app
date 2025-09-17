@@ -3,6 +3,7 @@ import hashlib
 from galvani import BioLogic
 import streamlit as st
 
+from src.auswertung import mean_pairwise_abs_diff
 from classes.datenbank import Database
 from config import mes_spalten
 import pandas as pd
@@ -92,6 +93,10 @@ class Analyse:
 
             idx_200 = nearest(freq, 200)
             idx_400 = nearest(freq, 400)
+            idx_631 = nearest(freq, 631)
+            idx_31 = nearest(freq, 31)
+
+            mpd = mean_pairwise_abs_diff(eis['zohm'])
 
             temp = {
                 'soc': eis['soc'].values[0],
@@ -116,6 +121,9 @@ class Analyse:
                 'im_400': im.iloc[idx_400],
                 'phase_400': phase.iloc[idx_400],
                 'freq_400': freq.iloc[idx_400],
+                'mpd': mpd,
+                'im_631': im.iloc[idx_631],
+                'im_63': im.iloc[idx_31],
                 'datei': eis['datei'].values[0]
             }
             results.append(temp)

@@ -227,6 +227,21 @@ class Database:
             points = s.execute(text(sql2), params).fetchall()
         return data, points
 
+    def get_all_eis_data(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT eis.freqhz, eis.zohm, eis.phasezdeg, eis.calc_rezohm, eis.calc_imzohm, eis.soc, files.zelle, files.cycle
+                 FROM eis INNER JOIN files ON eis.datei = files.name
+                 WHERE eis.typ='eis'"""
+        return conn.query(sql)
+
+    def get_all_eis_points(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT eis_points.im_min, eis_points.im_max, eis_points.re_min, eis_points.re_max, eis_points.phase_max, eis_points.phase_min,
+                        eis_points.im_zif, eis_points.phase_zif, eis_points.mpd,
+                        eis_points.soc, files.zelle, files.cycle
+                 FROM eis_points INNER JOIN files ON eis_points.datei = files.name"""
+        return conn.query(sql)
+
     def get_all_eis(self):
         conn = st.connection("sql", type="sql")
         sql = "SELECT * FROM files WHERE typ = 'EIS'"
@@ -303,6 +318,12 @@ class Database:
         sql = "SELECT cap_p_cyc FROM zellen WHERE id = :zelle"
         params = {"zelle": zelle}
         cap = conn.query(sql, params=params)
+
+    def get_form(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT * FROM form"""
+        return conn.query(sql)
+
 
     def check_con(self):
         conn = st.connection("sql", type="sql")

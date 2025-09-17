@@ -11,3 +11,8 @@ def mean_pairwise_abs_diff(x):
     S = (x_sorted * (2*k - n - 1)).sum()
     mean = 2.0 * S / (n * (n - 1))
     return mean
+
+# Funktion zur Berechnung der relativen Abweichung zum Median
+def rel_dev_to_median(x):
+    med = np.median(x)
+    return np.mean(np.abs(x - med) / med) if med != 0 else 0

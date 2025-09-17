@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from src.auswertung import rel_dev_to_median
 from classes.datenanalyse import Analyse
 from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
@@ -10,12 +11,14 @@ def eis_app():
     with st.sidebar:
         side = st.radio(
             "Wähle eine Option",
-            ("Kurven", "Punkte")
+            ("Kurven", "Punkte", "Formierung")
         )
     if side == "Kurven":
         niqhist_app()
-    else:
+    elif side == "Punkte":
         points_app()
+    else:
+        form_app()
 
 def points_app():
     st.title("Points")
@@ -53,6 +56,8 @@ def points_app():
         col1, col2 = con1.columns(2)
         options = ["SoC", "Zelle", "Zyklus"]
         selected = col1.segmented_control("Subplots",options,help="Wähle Wert aus der in einem Diagramm angezeigt wird",default=options[1])
+        options = ["cycle","cap_cycle","soc"]
+        x_values = col1.segmented_control("X-Achse", options,default=options[0])
         options = [col for col in data.columns if col not in ["datei", "cycle", "zelle", "datum", "soc"]]
         y_values = col2.selectbox("Y-Werte", options)
         graphs = col2.toggle("Alle Grafen in einem Plot")
@@ -63,25 +68,21 @@ def points_app():
                 plot_name = "soc"
                 subplots = "zelle"
                 einheit = "mAh"
-                x_values = "cycle"
             elif selected == "Zyklus":
                 plots = zelle
                 plot_name = "zelle"
                 subplots = "cycle"
-                x_values = "soc"
                 einheit = "mAh"
             else:
                 plots = zelle
                 plot_name = "zelle"
                 subplots = "soc"
-                x_values = "cycle"
                 einheit = ""
         else:
             plots = ["allen ausgewählten Daten"]
             plot_name = ""
             data_mod = data
             subplots = "zelle"
-            x_values = "cycle"
             einheit = ""
 
         for p in plots:
@@ -212,6 +213,30 @@ def niqhist_app():
             if tabels:
                 con2.dataframe(data_mod)
 
+def form_app():
+    st.title("Formierungs Analyse")
+    DB = Database("form")
+    data = DB.get_form()
+    st.write(data)
+    if st.button("Werte Berechnen", type="primary") or True:
+        #eis = DB.get_all_eis_data()
+        #st.write(eis)
+        points = DB.get_all_eis_points()
+        st.write(points)
+
+        wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd']
+        df_long = points.melt(
+            id_vars=['soc', 'zelle', 'cycle'],  # diese bleiben unverändert
+            value_vars=wert_spalten,  # diese Spalten werden umgeformt
+            var_name='parameter',  # neue Spalte für den Parameternamen
+            value_name='wert'  # neue Spalte für den Wert
+        )
+        agg_funcs = {
+            'wert': ['mean', 'std', 'median', 'min', 'max', rel_dev_to_median]
+        }
+
+        plot_para_over_soc(df_long,agg_funcs)
+
 def plot_points(data, name,x_values, y_values, subplots):
     fig = px.line(data,
                   x=x_values,
@@ -241,3 +266,23 @@ def plot_graphs(data, name, subplots, x, y, log):
                   )
 
     return fig
+
+def plot_para_over_soc(df_long,agg_funcs):
+    # GroupBy nach Zelle, SoC und Parameter
+    df_agg = df_long.groupby(['zelle', 'soc', 'parameter']).agg(agg_funcs)
+
+    # Spaltennamen bereinigen
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+
+    # Index zurücksetzen
+    df_agg = df_agg.reset_index()
+    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
+
+    opt = ['cv', 'rel_abw_median']
+    sel = st.segmented_control("Wert auswählen", options=opt)
+    for zelle_id in df_agg['zelle'].unique():
+        df_plot = df_agg[df_agg['zelle'] == zelle_id]
+        fig = plot_points(df_plot, zelle_id, "soc", sel, "parameter")
+        st.subheader(f"{zelle_id}")
+        st.plotly_chart(fig)
+        st.write(df_plot)
