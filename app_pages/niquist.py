@@ -222,7 +222,6 @@ def form_app():
         #eis = DB.get_all_eis_data()
         #st.write(eis)
         points = DB.get_all_eis_points()
-        st.write(points)
 
         wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd']
         df_long = points.melt(
@@ -235,7 +234,15 @@ def form_app():
             'wert': ['mean', 'std', 'median', 'min', 'max', rel_dev_to_median]
         }
 
-        plot_para_over_soc(df_long,agg_funcs)
+        ops = ['soc_geo','overall_geo', 'tab overall']
+        sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
+        if sel1 == 'soc_geo':
+            plot_para_over_soc(df_long,agg_funcs)
+        elif sel1 == 'overall_geo':
+            plot_para_overall(df_long,agg_funcs)
+        else:
+            plot_tab_overall(df_long,agg_funcs)
+
 
 def plot_points(data, name,x_values, y_values, subplots):
     fig = px.line(data,
@@ -286,3 +293,35 @@ def plot_para_over_soc(df_long,agg_funcs):
         st.subheader(f"{zelle_id}")
         st.plotly_chart(fig)
         st.write(df_plot)
+
+def plot_para_overall(df_long,agg_funcs):
+    # GroupBy nach Zelle, SoC und Parameter
+    df_long = df_long[df_long['zelle'] != 'U_VTC5A_007']
+    df_agg = df_long.groupby(['parameter','soc']).agg(agg_funcs)
+
+    # Spaltennamen bereinigen
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+
+    # Index zurücksetzen
+    df_agg = df_agg.reset_index()
+    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
+
+    opt = ['cv', 'rel_abw_median']
+    sel = st.segmented_control("Wert auswählen", options=opt, default=opt[0])
+
+    fig = plot_points(df_agg, "Overall", "soc", sel, "parameter")
+    st.subheader("Overall")
+    st.plotly_chart(fig)
+    st.write(df_agg)
+
+def plot_tab_overall(df_long,agg_funcs):
+    df_long = df_long[~df_long['zelle'].isin(['U_VTC5A_007', 'JT_VTC_001', 'JT_VTC_002'])]
+    df_agg = df_long.groupby(['parameter']).agg(agg_funcs)
+
+    # Spaltennamen bereinigen
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+
+    # Index zurücksetzen
+    df_agg = df_agg.reset_index()
+    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
+    st.write(df_agg)
