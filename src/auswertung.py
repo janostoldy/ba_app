@@ -15,4 +15,4 @@ def mean_pairwise_abs_diff(x):
 # Funktion zur Berechnung der relativen Abweichung zum Median
 def rel_dev_to_median(x):
     med = np.median(x)
-    return np.mean(np.abs(x - med) / med) if med != 0 else 0
+    return abs(np.mean(np.abs(x - med) / med)) if med != 0 else 0

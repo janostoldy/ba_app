@@ -219,12 +219,32 @@ def form_app():
     data = DB.get_form()
     st.write(data)
     if st.button("Werte Berechnen", type="primary") or True:
-        #eis = DB.get_all_eis_data()
-        #st.write(eis)
+        eis = DB.get_all_eis_data()
+
+        eis = eis.rename(columns={
+            "calc_rezohm": "re",
+            "calc_imzohm": "im",
+            "phasezdeg": "phase",
+            "zohm": "betrag"
+        })
+        eis["freqhz"] = eis["freqhz"].round(2)
+        df_eis = eis.melt(
+            id_vars=["freqhz", "soc", "zelle", "cycle"],
+            value_vars=["re", "im", "phase", "betrag"],
+            var_name="parameter",
+            value_name="wert"
+        )
+
+        # Feature + Frequenz kombinieren
+        df_eis["parameter"] = df_eis["parameter"] + "@" + df_eis["freqhz"].astype(str) + "Hz"
+
+        # Frequenzspalte entfernen, weil sie jetzt Teil des Features ist
+        df_eis = df_eis.drop(columns=["freqhz"])
+
         points = DB.get_all_eis_points()
 
         wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd']
-        df_long = points.melt(
+        df_points = points.melt(
             id_vars=['soc', 'zelle', 'cycle'],  # diese bleiben unverändert
             value_vars=wert_spalten,  # diese Spalten werden umgeformt
             var_name='parameter',  # neue Spalte für den Parameternamen
@@ -234,14 +254,18 @@ def form_app():
             'wert': ['mean', 'std', 'median', 'min', 'max', rel_dev_to_median]
         }
 
-        ops = ['soc_geo','overall_geo', 'tab overall']
+        ops = ['soc_geo','overall_geo', 'tab overall','soc_freq','overall_freq']
         sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
         if sel1 == 'soc_geo':
-            plot_para_over_soc(df_long,agg_funcs)
+            plot_para_over_soc(df_points,agg_funcs)
         elif sel1 == 'overall_geo':
-            plot_para_overall(df_long,agg_funcs)
+            plot_para_overall(df_points,agg_funcs)
+        elif sel1 == 'soc_freq':
+            plot_freq_over_soc(df_eis, agg_funcs)
+        elif sel1 == 'overall_freq':
+            plot_freq_overall(df_eis, agg_funcs)
         else:
-            plot_tab_overall(df_long,agg_funcs)
+            plot_tab_overall(df_points,df_eis,agg_funcs)
 
 
 def plot_points(data, name,x_values, y_values, subplots):
@@ -273,6 +297,65 @@ def plot_graphs(data, name, subplots, x, y, log):
                   )
 
     return fig
+
+def plot_freq_over_soc(df_long,agg_funcs):
+    # GroupBy nach Zelle, SoC und Parameter
+    df_agg = df_long.groupby(['zelle', 'soc', 'parameter']).agg(agg_funcs)
+    df_overall = df_long.groupby(['zelle', 'parameter']).agg(agg_funcs)
+    # Spaltennamen bereinigen
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+
+    # Index zurücksetzen
+    df_agg = df_agg.reset_index()
+    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
+
+    df_overall = df_overall.reset_index()
+    df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
+
+    opt = ['cv', 'rel_abw_median']
+    sel = st.segmented_control("Wert auswählen", options=opt)
+    df_min= (
+        df_overall.sort_values(sel, ascending=True)
+        .groupby('zelle')
+        .head(10)
+    )
+
+    for zelle_id in df_agg['zelle'].unique():
+        df_plot = df_agg[df_agg['zelle'] == zelle_id]
+        paras = df_min[df_min['zelle'] == zelle_id]
+        df_plot = df_plot[df_plot['parameter'].isin(paras['parameter'])]
+        fig = plot_points(df_plot, zelle_id, "soc", sel, "parameter")
+        st.subheader(f"{zelle_id}")
+        st.plotly_chart(fig)
+        st.write(paras)
+
+def plot_freq_overall(df_long,agg_funcs):
+    # GroupBy nach Zelle, SoC und Parameter
+    df_agg = df_long.groupby(['soc', 'parameter']).agg(agg_funcs)
+    df_overall = df_long.groupby(['parameter']).agg(agg_funcs)
+    # Spaltennamen bereinigen
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+
+    # Index zurücksetzen
+    df_agg = df_agg.reset_index()
+    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
+
+    df_overall = df_overall.reset_index()
+    df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
+
+    opt = ['cv', 'rel_abw_median']
+    sel = st.segmented_control("Wert auswählen", options=opt)
+    df_min = (
+        df_overall.sort_values(sel, ascending=True)
+        .head(10)
+    )
+    df_plot = df_agg[df_agg['parameter'].isin(df_min['parameter'])]
+    fig = plot_points(df_plot, 'overall', "soc", sel, "parameter")
+    st.subheader(f"Overall")
+    st.plotly_chart(fig)
+    st.write(df_min)
 
 def plot_para_over_soc(df_long,agg_funcs):
     # GroupBy nach Zelle, SoC und Parameter
@@ -314,7 +397,22 @@ def plot_para_overall(df_long,agg_funcs):
     st.plotly_chart(fig)
     st.write(df_agg)
 
-def plot_tab_overall(df_long,agg_funcs):
+def plot_tab_overall(df_long,df_eis,agg_funcs):
+    df_overall = df_eis.groupby(['parameter']).agg(agg_funcs)
+    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_overall = df_overall.reset_index()
+    df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
+    df_min_cv = (
+        df_overall.sort_values('cv', ascending=True)
+        .head(10)
+    )
+    df_min_med =  (
+        df_overall.sort_values('rel_abw_median', ascending=True)
+        .head(10)
+    )
+    df_combined = pd.concat([df_min_cv, df_min_med])
+    df_combined = df_combined.drop_duplicates()
+
     df_long = df_long[~df_long['zelle'].isin(['U_VTC5A_007', 'JT_VTC_001', 'JT_VTC_002'])]
     df_agg = df_long.groupby(['parameter']).agg(agg_funcs)
 
@@ -323,5 +421,7 @@ def plot_tab_overall(df_long,agg_funcs):
 
     # Index zurücksetzen
     df_agg = df_agg.reset_index()
-    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
-    st.write(df_agg)
+    df_agg['cv'] = abs(df_agg['std'] / df_agg['mittelwert'])
+    df_combined =pd.concat([df_combined, df_agg])
+    df_combined = df_combined.reset_index(drop=True)
+    st.write(df_combined)
