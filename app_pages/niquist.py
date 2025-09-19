@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from src.auswertung import rel_dev_to_median
+from src.auswertung import max_dev_to_median
 from classes.datenanalyse import Analyse
 from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
@@ -235,15 +235,10 @@ def form_app():
             value_name="wert"
         )
 
-        # Feature + Frequenz kombinieren
-        df_eis["parameter"] = df_eis["parameter"] + "@" + df_eis["freqhz"].astype(str) + "Hz"
-
-        # Frequenzspalte entfernen, weil sie jetzt Teil des Features ist
-        df_eis = df_eis.drop(columns=["freqhz"])
-
         points = DB.get_all_eis_points()
 
-        wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd']
+        wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd',
+                        'phase_200','phase_400','im_631', 'im_63','im_400','im_200','re_200', 're_400']
         df_points = points.melt(
             id_vars=['soc', 'zelle', 'cycle'],  # diese bleiben unverändert
             value_vars=wert_spalten,  # diese Spalten werden umgeformt
@@ -251,21 +246,23 @@ def form_app():
             value_name='wert'  # neue Spalte für den Wert
         )
         agg_funcs = {
-            'wert': ['mean', 'std', 'median', 'min', 'max', rel_dev_to_median]
+            'wert': ['mean', 'std', 'median', 'min', 'max', max_dev_to_median]
         }
 
-        ops = ['soc_geo','overall_geo', 'tab overall','soc_freq','overall_freq']
+        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq']
         sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
         if sel1 == 'soc_geo':
             plot_para_over_soc(df_points,agg_funcs)
         elif sel1 == 'overall_geo':
             plot_para_overall(df_points,agg_funcs)
-        elif sel1 == 'soc_freq':
-            plot_freq_over_soc(df_eis, agg_funcs)
         elif sel1 == 'overall_freq':
             plot_freq_overall(df_eis, agg_funcs)
+        elif sel1 == 'soc_freq':
+            pass
         else:
             plot_tab_overall(df_points,df_eis,agg_funcs)
+
+        #y: Abweichung, x: soc, plots für bestimte frequenzen z.B. phase 400hz
 
 
 def plot_points(data, name,x_values, y_values, subplots):
@@ -303,8 +300,8 @@ def plot_freq_over_soc(df_long,agg_funcs):
     df_agg = df_long.groupby(['zelle', 'soc', 'parameter']).agg(agg_funcs)
     df_overall = df_long.groupby(['zelle', 'parameter']).agg(agg_funcs)
     # Spaltennamen bereinigen
-    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
-    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
+    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
 
     # Index zurücksetzen
     df_agg = df_agg.reset_index()
@@ -313,7 +310,7 @@ def plot_freq_over_soc(df_long,agg_funcs):
     df_overall = df_overall.reset_index()
     df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
 
-    opt = ['cv', 'rel_abw_median']
+    opt = ['cv', 'max_abw_median']
     sel = st.segmented_control("Wert auswählen", options=opt)
     df_min= (
         df_overall.sort_values(sel, ascending=True)
@@ -331,44 +328,44 @@ def plot_freq_over_soc(df_long,agg_funcs):
         st.write(paras)
 
 def plot_freq_overall(df_long,agg_funcs):
-    # GroupBy nach Zelle, SoC und Parameter
-    df_agg = df_long.groupby(['soc', 'parameter']).agg(agg_funcs)
-    df_overall = df_long.groupby(['parameter']).agg(agg_funcs)
-    # Spaltennamen bereinigen
-    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
-    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    # Gruppieren nach Frequenz und Parameter (soc und cycle fallen weg)
+    df_eis = df_long.groupby(['freqhz', 'parameter']).agg(
+        mittelwert=('wert', 'mean'),
+        std=('wert', 'std'),
+        median=('wert', 'median'),
+        min=('wert', 'min'),
+        max=('wert', 'max')
+    ).reset_index()
 
-    # Index zurücksetzen
-    df_agg = df_agg.reset_index()
-    df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
-
-    df_overall = df_overall.reset_index()
-    df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
-
-    opt = ['cv', 'rel_abw_median']
-    sel = st.segmented_control("Wert auswählen", options=opt)
-    df_min = (
-        df_overall.sort_values(sel, ascending=True)
-        .head(10)
-    )
-    df_plot = df_agg[df_agg['parameter'].isin(df_min['parameter'])]
-    fig = plot_points(df_plot, 'overall', "soc", sel, "parameter")
-    st.subheader(f"Overall")
+    # Variationskoeffizient hinzufügen
+    df_eis['cv'] = df_eis['std'] / df_eis['mittelwert']
+    opt = ['re', 'im','phase','betrag']
+    sel = st.segmented_control("Wert auswählen", options=opt, default=opt[0])
+    df_long = df_long[df_long['parameter'] == sel]
+    df_sorted = df_long.sort_values("soc")
+    #for zelle in df_sorted['zelle'].unique():
+    #df_plot = df_sorted[df_sorted['zelle'] == zelle]
+    fig = px.box(df_sorted,
+                 x="freqhz",
+                 y='wert',
+                 log_x=True,
+                 color="zelle",
+                 hover_data=["soc","cycle"],)
     st.plotly_chart(fig)
-    st.write(df_min)
+    st.write(df_eis)
 
 def plot_para_over_soc(df_long,agg_funcs):
     # GroupBy nach Zelle, SoC und Parameter
     df_agg = df_long.groupby(['zelle', 'soc', 'parameter']).agg(agg_funcs)
 
     # Spaltennamen bereinigen
-    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
 
     # Index zurücksetzen
     df_agg = df_agg.reset_index()
     df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
 
-    opt = ['cv', 'rel_abw_median']
+    opt = ['cv', 'max_abw_median']
     sel = st.segmented_control("Wert auswählen", options=opt)
     for zelle_id in df_agg['zelle'].unique():
         df_plot = df_agg[df_agg['zelle'] == zelle_id]
@@ -383,13 +380,13 @@ def plot_para_overall(df_long,agg_funcs):
     df_agg = df_long.groupby(['parameter','soc']).agg(agg_funcs)
 
     # Spaltennamen bereinigen
-    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
 
     # Index zurücksetzen
     df_agg = df_agg.reset_index()
     df_agg['cv'] = df_agg['std'] / df_agg['mittelwert']
 
-    opt = ['cv', 'rel_abw_median']
+    opt = ['cv', 'max_abw_median']
     sel = st.segmented_control("Wert auswählen", options=opt, default=opt[0])
 
     fig = plot_points(df_agg, "Overall", "soc", sel, "parameter")
@@ -399,7 +396,7 @@ def plot_para_overall(df_long,agg_funcs):
 
 def plot_tab_overall(df_long,df_eis,agg_funcs):
     df_overall = df_eis.groupby(['parameter']).agg(agg_funcs)
-    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_overall.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
     df_overall = df_overall.reset_index()
     df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
     df_min_cv = (
@@ -407,7 +404,7 @@ def plot_tab_overall(df_long,df_eis,agg_funcs):
         .head(10)
     )
     df_min_med =  (
-        df_overall.sort_values('rel_abw_median', ascending=True)
+        df_overall.sort_values('max_abw_median', ascending=True)
         .head(10)
     )
     df_combined = pd.concat([df_min_cv, df_min_med])
@@ -417,7 +414,7 @@ def plot_tab_overall(df_long,df_eis,agg_funcs):
     df_agg = df_long.groupby(['parameter']).agg(agg_funcs)
 
     # Spaltennamen bereinigen
-    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'rel_abw_median']
+    df_agg.columns = ['mittelwert', 'std', 'median', 'min', 'max', 'max_abw_median']
 
     # Index zurücksetzen
     df_agg = df_agg.reset_index()
