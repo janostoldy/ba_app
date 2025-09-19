@@ -65,6 +65,7 @@ def points_app():
         if not graphs:
             if selected == "SoC":
                 plots = soc
+                data = data.sort_values(by=["cycle"])
                 plot_name = "soc"
                 subplots = "zelle"
                 einheit = "mAh"
