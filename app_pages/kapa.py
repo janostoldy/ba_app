@@ -31,7 +31,9 @@ def kapazitaet_app():
 
         norm = con1.toggle("Startpunkt normieren")
         if norm:
+            temp = data[data["zelle"]=='JT_VTC_002']
             data = data[~data["datei"].str.contains("Characterization", na=False)]
+            data = pd.concat([data, temp])
             data["kapa_norm"] = data.groupby("zelle")["kapa"].transform(lambda x: x - x.iloc[0])
             plot_y = "kapa_norm"
         else:

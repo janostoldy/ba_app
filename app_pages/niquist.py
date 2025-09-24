@@ -259,7 +259,7 @@ def form_app():
         elif sel1 == 'overall_freq':
             plot_freq_overall(df_eis, agg_funcs)
         elif sel1 == 'soc_freq':
-            pass
+            plot_soc_freq(df_eis, agg_funcs)
         else:
             plot_tab_overall(df_points,df_eis,agg_funcs)
 
@@ -354,6 +354,12 @@ def plot_freq_overall(df_long,agg_funcs):
                  hover_data=["soc","cycle"],)
     st.plotly_chart(fig)
     st.write(df_eis)
+
+def plot_soc_freq(df_long,agg_funcs):
+    freq = df_long['freqhz'].unique()
+    sel2 = st.segmented_control("Frequenz wählen",options=freq)
+    if sel2:
+        df_freq= df_long[df_long['freqhz'] == sel2]
 
 def plot_para_over_soc(df_long,agg_funcs):
     # GroupBy nach Zelle, SoC und Parameter
