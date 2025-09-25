@@ -245,7 +245,6 @@ def form_app():
             var_name='parameter',  # neue Spalte für den Parameternamen
             value_name='wert'  # neue Spalte für den Wert
         )
-        st.write(df_points)
 
         df_match_eis = df_eis.drop(columns=["freqhz"])
         df_match_eis['parameter'] = df_eis['parameter'] + '_' + df_eis['freqhz'].astype(str)
