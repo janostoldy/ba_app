@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-from src.auswertung import max_dev_to_median
+from src.auswertung import max_dev_to_median, robust_start_end_median, robust_start_end_abw
 from classes.datenanalyse import Analyse
 from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
@@ -237,20 +237,27 @@ def form_app():
         )
 
         points = DB.get_all_eis_points()
-
         wert_spalten = ['im_max', 're_min', 're_max', 'im_min', 'phase_max', 'phase_min', 'im_zif', 'phase_zif', 'mpd',
-                        'phase_200','phase_400','im_631', 'im_63','im_400','im_200','re_200', 're_400']
+                        'phase_184','phase_400','im_631', 'im_63','im_400','im_184','re_184', 're_400']
         df_points = points.melt(
             id_vars=['soc', 'zelle', 'cycle'],  # diese bleiben unverändert
-            value_vars=wert_spalten,  # diese Spalten werden umgeformt
+            #value_vars=wert_spalten,  # diese Spalten werden umgeformt
             var_name='parameter',  # neue Spalte für den Parameternamen
             value_name='wert'  # neue Spalte für den Wert
         )
+        st.write(df_points)
+
+        df_match_eis = df_eis.drop(columns=["freqhz"])
+        df_match_eis['parameter'] = df_eis['parameter'] + '_' + df_eis['freqhz'].astype(str)
+        exclude = ['phase_200','phase_400','im_631', 'im_63','im_400','im_200','re_200', 're_400']
+        df_match_points = df_points[~df_points['parameter'].isin(exclude)]
+        df_all = pd.concat([df_match_points, df_match_eis])
+
         agg_funcs = {
             'wert': ['mean', 'std', 'median', 'min', 'max', max_dev_to_median]
         }
 
-        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq']
+        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq','tab_zelle']
         sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
         if sel1 == 'soc_geo':
             plot_para_over_soc(df_points,agg_funcs)
@@ -260,8 +267,10 @@ def form_app():
             plot_freq_overall(df_eis, agg_funcs)
         elif sel1 == 'soc_freq':
             plot_soc_freq(df_eis, agg_funcs)
+        elif sel1 == 'tab_zelle':
+            plot_tab_zelle(df_match_points)
         else:
-            plot_tab_overall(df_points,df_eis,agg_funcs)
+            plot_tab_overall(df_points,df_match_eis,agg_funcs)
 
         #y: Abweichung, x: soc, plots für bestimte frequenzen z.B. phase 400hz
 
@@ -408,11 +417,9 @@ def plot_tab_overall(df_long,df_eis,agg_funcs):
     df_overall['cv'] = abs(df_overall['std'] / df_overall['mittelwert'])
     df_min_cv = (
         df_overall.sort_values('cv', ascending=True)
-        .head(10)
     )
     df_min_med =  (
         df_overall.sort_values('max_abw_median', ascending=True)
-        .head(10)
     )
     df_combined = pd.concat([df_min_cv, df_min_med])
     df_combined = df_combined.drop_duplicates()
@@ -429,3 +436,27 @@ def plot_tab_overall(df_long,df_eis,agg_funcs):
     df_combined =pd.concat([df_combined, df_agg])
     df_combined = df_combined.reset_index(drop=True)
     st.write(df_combined)
+
+def plot_tab_zelle(df_all):
+    zellen_dict = {zelle: df for zelle, df in df_all.groupby('zelle')}
+    for zelle in zellen_dict:
+        st.subheader(zelle)
+        zelle_df = zellen_dict[zelle]
+        zelle_df = zelle_df.drop(columns=['zelle'])
+        gruppen = [df for _, df in zelle_df.groupby(['soc', 'parameter'])]
+        result1 = pd.DataFrame([{
+            "soc": gruppe["soc"].iloc[0],
+            "parameter": gruppe["parameter"].iloc[0],
+            "robust_median": robust_start_end_median(gruppe["wert"]),
+            "bis_median_0.05": robust_start_end_abw(gruppe,0.05),
+            "bis_median_0.01": robust_start_end_abw(gruppe,0.01)
+        } for gruppe in gruppen])
+        gruppen = [df for _, df in result1.groupby('parameter')]
+        result2 = pd.DataFrame([{
+            "parameter": gruppe["parameter"].iloc[0],
+            "gesamt_delta_mean": gruppe["robust_median"].mean(),
+            "gesamt_bis_median_0.05": gruppe["bis_median_0.05"].max(),
+            "gesamt_bis_median_0.01": gruppe["bis_median_0.01"].max()
+        } for gruppe in gruppen])
+
+        st.write(result2)

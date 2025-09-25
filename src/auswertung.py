@@ -1,4 +1,5 @@
 import numpy as np
+import streamlit as st
 
 def mean_pairwise_abs_diff(x):
     x = np.asarray(x)
@@ -16,3 +17,19 @@ def mean_pairwise_abs_diff(x):
 def max_dev_to_median(x):
     med = np.median(x)
     return max(np.abs(x - med) / med)
+
+def robust_start_end_median(df):
+    med_start = df.iloc[0]
+    med_end = df.iloc[-5:].median()
+    delta_abs = med_end - med_start
+    delta_rel = abs(delta_abs / med_start)
+    return delta_rel
+
+def robust_start_end_abw(df, tol=0.05):
+    werte = df["wert"]
+    med_end = werte.iloc[-5:].median()
+    for z, wert in enumerate(werte.values):
+        delta_abs = abs((wert - med_end)/ med_end)
+        if delta_abs < tol:
+            return df['cycle'].iloc[z]
+    return -1

@@ -95,6 +95,7 @@ class Analyse:
             idx_400 = nearest(freq, 400)
             idx_631 = nearest(freq, 631)
             idx_31 = nearest(freq, 31)
+            idx_16 = nearest(freq, 16)
 
             mpd = mean_pairwise_abs_diff(eis['zohm'])
 
@@ -113,17 +114,18 @@ class Analyse:
                 're_zif': re.iloc[zif_indizes],
                 'phase_zif': phase.iloc[zif_indizes],
                 'freq_zif': freq.iloc[zif_indizes],
-                're_200': re.iloc[idx_200],
-                'im_200': im.iloc[idx_200],
-                'phase_200': phase.iloc[idx_200],
-                'freq_200': freq.iloc[idx_200],
-                're_400': re.iloc[idx_400],
-                'im_400': im.iloc[idx_400],
-                'phase_400': phase.iloc[idx_400],
-                'freq_400': freq.iloc[idx_400],
+                're_184': re.iloc[idx_200],
+                'im_184': im.iloc[idx_200],
+                'phase_184': phase.iloc[idx_200],
+                're_376': re.iloc[idx_400],
+                'im_376': im.iloc[idx_400],
+                'phase_376': phase.iloc[idx_400],
                 'mpd': mpd,
-                'im_631': im.iloc[idx_631],
-                'im_63': im.iloc[idx_31],
+                'im_600': im.iloc[idx_631],
+                'im_57': im.iloc[idx_31],
+                'im_16': im.iloc[idx_16],
+                'd_zi_min_re': re.iloc[minima_indices] - re.iloc[zif_indizes],
+                'd_zi_max_re': re.iloc[maxima_indices] - re.iloc[zif_indizes],
                 'datei': eis['datei'].values[0]
             }
             results.append(temp)
