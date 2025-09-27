@@ -61,7 +61,24 @@ def points_app():
         options = [col for col in data.columns if col not in ["datei", "cycle", "zelle", "datum", "soc"]]
         y_values = col2.selectbox("Y-Werte", options)
         graphs = col2.toggle("Alle Grafen in einem Plot")
-        zero = col2.toggle("Startpunkt normalisieren")
+        aus = col2.toggle("Ausreißer entfernen")
+        if aus:
+            gruppen = []
+            for _, gruppe in data.groupby(['soc', 'zelle']):
+                werte = gruppe[y_values]
+                q1 = werte.quantile(0.25)
+                q3 = werte.quantile(0.75)
+                iqr = q3 - q1
+                lower = q1 - 1.5 * iqr
+                upper = q3 + 1.5 * iqr
+                erster = gruppe.iloc[[0]]
+
+                gefiltert = gruppe.iloc[1:]
+                gefiltert = gefiltert[(gefiltert[y_values] >= lower) & (gefiltert[y_values] <= upper)]
+
+                gruppe_clean = pd.concat([erster, gefiltert])
+                gruppen.append(gruppe_clean)
+            data = pd.concat(gruppen, ignore_index=True)
         if not graphs:
             if selected == "SoC":
                 plots = soc
