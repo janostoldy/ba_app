@@ -270,6 +270,13 @@ class Database:
         with conn.session as s:
             result = s.execute(text(sql), params).fetchall()
         return result
+    def get_lup(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT *
+                 FROM eis
+                 WHERE typ = 'lup' """
+        return conn.query(sql)
+
     def get_imp_bio(self):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * 
