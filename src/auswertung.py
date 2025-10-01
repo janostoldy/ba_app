@@ -20,14 +20,14 @@ def max_dev_to_median(x):
 
 def robust_start_end_median(df):
     med_start = df.iloc[0]
-    med_end = df.iloc[-5:].median()
+    med_end = df.iloc[-3:].median()
     delta_abs = med_end - med_start
     delta_rel = abs(delta_abs / med_start)
     return delta_rel
 
 def robust_start_end_abw(df, tol=0.05):
     werte = df["wert"]
-    med_end = werte.iloc[-5:].median()
+    med_end = werte.iloc[-3:].median()
     for z, wert in enumerate(werte.values):
         delta_abs = abs((wert - med_end)/ med_end)
         if delta_abs < tol:

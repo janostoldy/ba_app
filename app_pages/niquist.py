@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+import numpy as np
 from src.auswertung import max_dev_to_median, robust_start_end_median, robust_start_end_abw
 from classes.datenanalyse import Analyse
 from classes.datenbank import Database
@@ -273,7 +274,7 @@ def form_app():
             'wert': ['mean', 'std', 'median', 'min', 'max', max_dev_to_median]
         }
 
-        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq','tab_zelle']
+        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq', 'soc_overall','tab_zelle']
         sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
         if sel1 == 'soc_geo':
             plot_para_over_soc(df_points,agg_funcs)
@@ -283,6 +284,8 @@ def form_app():
             plot_freq_overall(df_eis, agg_funcs)
         elif sel1 == 'soc_freq':
             plot_soc_freq(df_eis, agg_funcs)
+        elif sel1 == 'soc_overall':
+            plot_soc_overall(df_eis)
         elif sel1 == 'tab_zelle':
             plot_tab_zelle(df_match_points)
         else:
@@ -381,10 +384,86 @@ def plot_freq_overall(df_long,agg_funcs):
     st.write(df_eis)
 
 def plot_soc_freq(df_long,agg_funcs):
-    freq = df_long['freqhz'].unique()
-    sel2 = st.segmented_control("Frequenz wählen",options=freq)
+    freq = df_long['zelle'].unique()
+    sel2 = st.segmented_control("Zelle wählen",options=freq)
+    opt = ['re', 'im','phase','betrag']
+    sel3 = st.segmented_control("Wert auswählen", options=opt, default=opt[0])
     if sel2:
-        df_freq= df_long[df_long['freqhz'] == sel2]
+        df_para = df_long[df_long['parameter'] == sel3]
+        df_freq= df_para[df_para['zelle'] == sel2]
+        cycle = [0, 5,20,40]
+        #soc = [500,1250,2000]
+        df_sorted = df_freq[df_freq['cycle'].isin(cycle)]
+        #df_sorted = df_freq[df_freq['soc'].isin(soc)]
+        df_sorted = df_sorted.sort_values("soc")
+        st.write(df_sorted)
+        fig = px.box(df_sorted,
+                     x="freqhz",
+                     y='wert',
+                     log_x=True,
+                     color="cycle",
+                     #color="soc",
+                     hover_data=["soc", "cycle"], )
+        st.plotly_chart(fig)
+        df_eis = df_sorted.groupby(['freqhz', 'cycle']).agg(
+        #df_eis=df_sorted.groupby(['freqhz', 'soc']).agg(
+            mittelwert=('wert', 'mean'),
+            std=('wert', 'std'),
+            median=('wert', 'median'),
+            min=('wert', 'min'),
+            max=('wert', 'max')
+        ).reset_index()
+        opt2 = ['mittelwert','std','median','min','max']
+        sel4 = st.segmented_control("Wert auswählen", options=opt2, default=opt2[0])
+        fig = px.line(df_eis,
+                      x="freqhz",
+                      y=sel4,
+                      log_x=True,
+                      color="cycle"
+                      #color = "soc",
+        )
+        st.plotly_chart(fig)
+        st.write(df_eis)
+
+def plot_soc_overall(df_long):
+    zelle = df_long['zelle'].unique()
+    soc = [500,1250,2000]
+
+    opt1 = [0, 5,20,40]
+    cycle = st.segmented_control("Wert auswählen", options=opt1, default=opt1[0])
+    opt2 = ['re', 'im','phase','betrag']
+    sel3 = st.segmented_control("Wert auswählen", options=opt2, default=opt2[0])
+    if sel3:
+        df_para = df_long[df_long['parameter'] == sel3]
+        df_sorted = df_para[df_para['cycle'] == cycle]
+        st.write(df_sorted)
+        fig = px.box(df_sorted,
+                     x="freqhz",
+                     y='wert',
+                     log_x=True,
+                     color="zelle",
+                     #color="soc",
+                     hover_data=["soc", "zelle"], )
+        st.plotly_chart(fig)
+        df_eis = df_sorted.groupby(['freqhz', 'zelle']).agg(
+        #df_eis=df_sorted.groupby(['freqhz', 'soc']).agg(
+            mittelwert=('wert', 'mean'),
+            std=('wert', 'std'),
+            median=('wert', 'median'),
+            min=('wert', 'min'),
+            max=('wert', 'max')
+        ).reset_index()
+        opt2 = ['mittelwert','std','median','min','max']
+        sel4 = st.segmented_control("Wert auswählen", options=opt2, default=opt2[0])
+        fig = px.line(df_eis,
+                      x="freqhz",
+                      y=sel4,
+                      log_x=True,
+                      color="zelle"
+                      #color = "soc",
+        )
+        st.plotly_chart(fig)
+        st.write(df_eis)
 
 def plot_para_over_soc(df_long,agg_funcs):
     # GroupBy nach Zelle, SoC und Parameter
@@ -459,20 +538,57 @@ def plot_tab_zelle(df_all):
         st.subheader(zelle)
         zelle_df = zellen_dict[zelle]
         zelle_df = zelle_df.drop(columns=['zelle'])
+        gruppen = []
+        for _, gruppe in zelle_df.groupby(['soc', 'parameter']):
+            werte = gruppe["wert"]
+            q1 = werte.quantile(0.25)
+            q3 = werte.quantile(0.75)
+            iqr = q3 - q1
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+            erster = gruppe.iloc[[0]]
+            gefiltert = gruppe.iloc[1:]
+            gefiltert = gefiltert[(gefiltert["wert"] >= lower) & (gefiltert["wert"] <= upper)]
+            gruppe_clean = pd.concat([erster, gefiltert])
+
+            anzahl_entfernt = len(werte) - len(gruppe_clean)
+            gruppe_clean = gruppe_clean.assign(korrekturen=anzahl_entfernt)
+            gruppen.append(gruppe_clean)
+
+        zelle_df = pd.concat(gruppen, ignore_index=True)
+
         gruppen = [df for _, df in zelle_df.groupby(['soc', 'parameter'])]
         result1 = pd.DataFrame([{
             "soc": gruppe["soc"].iloc[0],
             "parameter": gruppe["parameter"].iloc[0],
+            "corections": gruppe["korrekturen"].iloc[0],
             "robust_median": robust_start_end_median(gruppe["wert"]),
+            "mean": gruppe["wert"].mean(),
             "bis_median_0.05": robust_start_end_abw(gruppe,0.05),
             "bis_median_0.01": robust_start_end_abw(gruppe,0.01)
         } for gruppe in gruppen])
         gruppen = [df for _, df in result1.groupby('parameter')]
         result2 = pd.DataFrame([{
             "parameter": gruppe["parameter"].iloc[0],
+            "corections": gruppe["corections"].sum(),
             "gesamt_delta_mean": gruppe["robust_median"].mean(),
-            "gesamt_bis_median_0.05": gruppe["bis_median_0.05"].max(),
-            "gesamt_bis_median_0.01": gruppe["bis_median_0.01"].max()
+            "delta_soc": gruppe["mean"].max() - gruppe["mean"].min(),
+            "gesamt_bis_median_0.05_20SOC": gruppe[gruppe["soc"] == 500]["bis_median_0.05"].values[0] if not gruppe[gruppe["soc"] == 500].empty else None,
+            "gesamt_bis_median_0.01_20SOC": gruppe[gruppe["soc"] == 500]["bis_median_0.01"].values[0] if not gruppe[gruppe["soc"] == 500].empty else None,
+            "gesamt_bis_median_0.05_50SOC": gruppe[gruppe["soc"] == 1250]["bis_median_0.05"].values[0] if not gruppe[gruppe["soc"] == 1250].empty else None,
+            "gesamt_bis_median_0.01_50SOC": gruppe[gruppe["soc"] == 1250]["bis_median_0.01"].values[0] if not gruppe[gruppe["soc"] == 1250].empty else None,
+            "gesamt_bis_median_0.05_80SOC": gruppe[gruppe["soc"] == 2000]["bis_median_0.05"].values[0] if not gruppe[gruppe["soc"] == 2000].empty else None,
+            "gesamt_bis_median_0.01_80SOC": gruppe[gruppe["soc"] == 2000]["bis_median_0.01"].values[0] if not gruppe[gruppe["soc"] == 2000].empty else None,
+
         } for gruppe in gruppen])
 
+        result2["gesamt_delta_mean"] = result2["gesamt_delta_mean"].apply(lambda x: float(f"{x:.3g}"))
+        result2 = result2.sort_values(by="gesamt_bis_median_0.01_50SOC", ascending=True)
         st.write(result2)
+        latex_table = result2.to_latex(index=False, escape=False, decimal=",")
+        st.download_button(
+            label="LaTeX-Tabelle herunterladen",
+            data=latex_table,
+            file_name=f"Form_{zelle}.tex",
+            mime="text/plain"
+        )
