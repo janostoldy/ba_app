@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from src.auswertung import max_dev_to_median, robust_start_end_median, robust_start_end_abw
+from src.auswertung import max_dev_to_median, robust_start_end_median, robust_start_end_abw, normiere_kurve
 from classes.datenanalyse import Analyse
 from classes.datenbank import Database
 from src.filtern import daten_filter, soc_filer
@@ -274,7 +274,7 @@ def form_app():
             'wert': ['mean', 'std', 'median', 'min', 'max', max_dev_to_median]
         }
 
-        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq', 'soc_overall','tab_zelle']
+        ops = ['soc_geo','overall_geo', 'tab overall','overall_freq','soc_freq', 'soc_overall','tab_zelle','plot_para_zelle']
         sel1 = st.segmented_control("Plots wählen", options=ops, default=ops[0])
         if sel1 == 'soc_geo':
             plot_para_over_soc(df_points,agg_funcs)
@@ -288,6 +288,8 @@ def form_app():
             plot_soc_overall(df_eis)
         elif sel1 == 'tab_zelle':
             plot_tab_zelle(df_match_points)
+        elif sel1 == 'plot_para_zelle':
+            plot_para_zelle(df_match_points)
         else:
             plot_tab_overall(df_points,df_match_eis,agg_funcs)
 
@@ -427,15 +429,17 @@ def plot_soc_freq(df_long,agg_funcs):
 
 def plot_soc_overall(df_long):
     zelle = df_long['zelle'].unique()
-    soc = [500,1250,2000]
-
-    opt1 = [0, 5,20,40]
-    cycle = st.segmented_control("Wert auswählen", options=opt1, default=opt1[0])
-    opt2 = ['re', 'im','phase','betrag']
-    sel3 = st.segmented_control("Wert auswählen", options=opt2, default=opt2[0])
+    opt1 = [500,1250,2000]
+    soc = st.segmented_control("SOC auswählen", options=opt1, default=opt1[0])
+    #opt2 = [0, 5,20,40]
+    #cycle = st.segmented_control("Zyklus auswählen", options=opt2, default=opt2[0])
+    opt3 = ['re', 'im','phase','betrag']
+    sel3 = st.segmented_control("Wert auswählen", options=opt3, default=opt3[0])
     if sel3:
         df_para = df_long[df_long['parameter'] == sel3]
-        df_sorted = df_para[df_para['cycle'] == cycle]
+        df_sorted = df_para[df_para['soc'] == soc]
+        cycle = [5, 40]
+        df_sorted = df_sorted[df_sorted['cycle'].isin(cycle)]
         st.write(df_sorted)
         fig = px.box(df_sorted,
                      x="freqhz",
@@ -448,12 +452,9 @@ def plot_soc_overall(df_long):
         df_eis = df_sorted.groupby(['freqhz', 'zelle']).agg(
         #df_eis=df_sorted.groupby(['freqhz', 'soc']).agg(
             mittelwert=('wert', 'mean'),
-            std=('wert', 'std'),
-            median=('wert', 'median'),
-            min=('wert', 'min'),
-            max=('wert', 'max')
+            div=('wert', lambda x: x.max() - x.min()),
         ).reset_index()
-        opt2 = ['mittelwert','std','median','min','max']
+        opt2 = ['mittelwert','div']
         sel4 = st.segmented_control("Wert auswählen", options=opt2, default=opt2[0])
         fig = px.line(df_eis,
                       x="freqhz",

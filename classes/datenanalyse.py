@@ -236,7 +236,7 @@ class Analyse:
                     'datei': [data_name],
                     'info': [f"Zelle {Zelle} nach Zyklus {cycle}"],
                     'kapa': [kapa],
-                    'kapa_norm': [kapa] - inital,
+                    #'kapa_norm': [kapa] - inital,
                 })
 
                 if save_data:

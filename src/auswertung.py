@@ -33,3 +33,10 @@ def robust_start_end_abw(df, tol=0.05):
         if delta_abs < tol:
             return df['cycle'].iloc[z]
     return -1
+
+def normiere_kurve(gruppe):
+    last3 = gruppe.tail(3)['wert']
+    median = last3.median()
+    gruppe = gruppe.copy()
+    gruppe['wert_norm'] = gruppe['wert'] / median if median != 0 else gruppe['wert']
+    return gruppe
