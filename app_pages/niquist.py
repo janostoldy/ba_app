@@ -592,3 +592,42 @@ def plot_tab_zelle(df_all):
             file_name=f"Form_{zelle}.tex",
             mime="text/plain"
         )
+
+def plot_para_zelle(df_all):
+    gruppen = []
+    # Filtert Extremwerte raus
+    for _, gruppe in df_all.groupby(['zelle', 'soc', 'parameter']):
+        werte = gruppe["wert"]
+        q1 = werte.quantile(0.25)
+        q3 = werte.quantile(0.75)
+        iqr = q3 - q1
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+        erster = gruppe.iloc[[0]]
+        gefiltert = gruppe.iloc[1:]
+        gefiltert = gefiltert[(gefiltert["wert"] >= lower) & (gefiltert["wert"] <= upper)]
+        gruppe_clean = pd.concat([erster, gefiltert])
+
+        anzahl_entfernt = len(werte) - len(gruppe_clean)
+        gruppe_clean = gruppe_clean.assign(korrekturen=anzahl_entfernt)
+        gruppen.append(gruppe_clean)
+    zelle_df = pd.concat(gruppen, ignore_index=True)
+
+    opt1 = [500, 1250, 2000]
+    soc = st.segmented_control("SOC auswählen", options=opt1, default=opt1[0])
+    data_df = zelle_df[zelle_df["soc"] == soc]
+
+    opt2 = ["wert", "wert_norm"]
+    wert = st.segmented_control("SOC auswählen", options=opt2, default=opt2[0])
+
+    for para in data_df['parameter'].unique():
+        st.write(para)
+        plot_df = data_df[data_df['parameter'] == para]
+        plot_df = plot_df.groupby('zelle', group_keys=False).apply(normiere_kurve)
+        fig = px.line(plot_df,
+                      x="cycle",
+                      y=wert,
+                      color="zelle")
+        if wert == "wert_norm":
+            fig.update_yaxes(range=[0.5, 1.5])
+        st.plotly_chart(fig)
