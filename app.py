@@ -12,6 +12,7 @@ from app_pages.pruefung import pruefung_app
 from app_pages.safion import safion_app
 from app_pages.impedanz import basytec_app
 from app_pages.ecd import ecd_app
+from app_pages.lup import lup_app
 
 # streamlit run c:/projects/ba_pipline/app.py
 # streamlit run /Users/janostoldy/Documents/git_projecte/ba_app/app.py
@@ -28,6 +29,7 @@ dva_page = st.Page(dva_app, title="DVA", icon="📈")
 eis_page = st.Page(eis_app, title="EIS", icon="📈")
 basytec_page = st.Page(basytec_app, title="Basytec", icon="📈")
 ecd_page = st.Page(ecd_app, title="ECD", icon="🎛️")
+lup_page = st.Page(lup_app, title="Look Up Table", icon="🗒️")
 
 #user = st.session_state["User"]
 #if user.role == "user":
@@ -73,6 +75,7 @@ pg = st.navigation(
             eis_page,
             dva_page,
             basytec_page,
+            lup_page,
         ],
     }
 )
