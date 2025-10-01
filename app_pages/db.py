@@ -21,7 +21,7 @@ def add_data_app():
     alle_zellen = DB.get_all_zells()
     zelle = con2.selectbox("Zellen eingeben", alle_zellen["id"], index=st.session_state.get("zelle_index",None))
     st.session_state["zelle_index"] = alle_zellen["id"].tolist().index(zelle) if zelle in alle_zellen["id"].tolist() else None
-    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Ageing","DVA-Analyse","Kapazitäts-Messung","Impedanz",
+    typs = ["Eingangsprüfung", "EIS-Analyse","EIS-Analyse (+5)","Create LUP","Ageing","DVA-Analyse","Kapazitäts-Messung","Impedanz",
             "Thermische Relaxation"]
     typ = con2.selectbox("Analyse Art",typs, index=st.session_state.get("typ_index",None))
     st.session_state["typ_index"] = typs.index(typ) if typ in typs else None
@@ -79,11 +79,13 @@ def add_data_app():
                 my_bar = st.progress(0, text="Daten werden analysiert...")
                 if typ == "EIS-Analyse":
                     DA.analyze_EIS_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
-                if typ == "EIS-Analyse (+5)":
+                elif typ == "EIS-Analyse (+5)":
                     for n, direkt in enumerate(file_dir):
                         my_bar.progress((n+1) / len(file_dir), text=f"Analysiere {os.path.basename(direkt)} ...")
                         DA.analyze_EIS_data(file_path=[direkt], cycle=cycle, Zelle=zelle, save_data=True)
                         cycle = cycle + 5
+                elif typ == "Create LUP":
+                    DA.analyze_LUP_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "DVA-Analyse":
                     DA.analys_OCV_data(file_path=file_dir, cycle=cycle, Zelle=zelle, save_data=True)
                 elif typ == "Kapazitäts-Messung":
