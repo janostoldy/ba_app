@@ -6,3 +6,14 @@ from classes.datenbank import Database
 def lup_app():
     st.title("Creat Look-Up-Table")
     DB = Database("lup")
+    df = DB.get_lup()
+    data_df = df[df["freqhz"].between(195, 205)]
+    data_df = data_df[data_df["calc_ima"]==0]
+
+    fig = px.scatter_3d(data_df,
+                        x='soc',
+                        y='temperaturec',
+                        z='phasezdeg',
+                        hover_data=["datei"]
+                        )
+    st.plotly_chart(fig)
