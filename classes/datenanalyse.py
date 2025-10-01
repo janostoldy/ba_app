@@ -33,11 +33,6 @@ class Analyse:
                 raise Exception("Keine Eingangsprüfung!")
 
 
-    def create_hash(self, Messung, freqHz, cycle, soc, ima, zelle):
-        # Erstelle einen Hash-Wert für die Zeile
-        hash_input = f"{Messung}{freqHz}{cycle}{soc}{ima}{zelle}"
-        return hashlib.sha256(hash_input.encode()).hexdigest()
-
     def add_relax(self, file_path, cycle, Zelle, save_data):
         #try:
             for data_path in file_path:
@@ -134,7 +129,7 @@ class Analyse:
         if save_data:
             self.DB.df_in_DB(df=niquist_df, table_name='eis_points')
 
-    def analyze_EIS_data(self, file_path, cycle, Zelle, save_data):
+    def analyze_EIS_data(self, file_path, cycle, Zelle, save_data, typ='eis'):
         try:
             for data_path in file_path:
                 data_name = os.path.basename(data_path)
@@ -167,13 +162,11 @@ class Analyse:
                     eis.loc[:, 'calc_rezohm'] = eis['zohm'] * np.cos(eis_phi.values)
                     eis.loc[:, 'calc_imzohm'] = eis['zohm'] * np.sin(eis_phi.values) * -1
 
-                    eis_hashes = [self.create_hash('eis', freq, cycle, eis_soc.iloc[i], eis_Calc_ImA.iloc[i], Zelle) for freq in eis['freqhz']]
                     eis.loc[:, 'soc'] = eis_soc.iloc[i]
                     eis.loc[:, 'calc_ima'] = eis_Calc_ImA.iloc[i]
                     eis.loc[:, 'calc_times'] = eis['times'] - start_time.iloc[i]
-                    eis.loc[:, 'hash'] = eis_hashes
                     eis.loc[:, 'datei'] = data_name
-                    eis.loc[:, 'typ'] = 'eis'
+                    eis.loc[:, 'typ'] = typ
 
                 self.analyze_DEIS_data(df, data_name, cycle, Zelle, save_data)
 
@@ -195,8 +188,6 @@ class Analyse:
             deis_soc = round(df.qqomah[deis_indices - 1] / 125) * 125
             deis_ImA = df.ima[deis_indices - 1]
             deis_Calc_ImA = round(deis_ImA / 1250) * 1250
-            deis_freq = deis_values['freqhz']
-            deis_hashes = [self.create_hash('deis', freq, cycle, soc, ima, Zelle) for soc, ima, freq in zip(deis_soc,deis_Calc_ImA, deis_freq)]
 
             #Anpassungen, um Daten zusammenzufügen
             deis_soc.index = deis_soc.index + 1
@@ -210,7 +201,6 @@ class Analyse:
             deis_values.loc[:, 'soc'] = deis_soc
             deis_values.loc[:, 'calc_ima'] = deis_Calc_ImA
             deis_values.loc[:, 'calc_times'] = 0
-            deis_values.loc[:, 'hash'] = deis_hashes
             deis_values.loc[:, 'datei'] = os.path.basename(data_name)
             deis_values.loc[:, 'typ'] = "deis"
 
