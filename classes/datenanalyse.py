@@ -219,6 +219,43 @@ class Analyse:
         except Exception as e:
             st.warning(f"Fehler bei DEIS-Analyse -> {e}")
 
+    def analyze_LUP_data(self, file_path, cycle, Zelle, save_data):
+        data_name = os.path.basename(file_path[0])
+        mpr_file = BioLogic.MPRfile(file_path[0])
+        df = pd.DataFrame(mpr_file.data)
+        df = df.rename(columns=mes_spalten)
+
+        if 'zohm' not in df.columns:
+            raise Exception("Keine Eis-Daten")
+
+        deis_values = df[(df['flags'].isin([117, 101, 229, 245])) & (df['freqhz'] > 0)].copy()
+        if len(deis_values) == 0:
+            raise Exception('No DEIS data found in file or wrong flags.')
+        deis_indices = deis_values.index
+        deis_soc = round(df.qqomah[deis_indices - 1] / 125) * 125
+        deis_ImA = df.ima[deis_indices - 1]
+        deis_Calc_ImA = round(deis_ImA / 1250) * 1250
+        deis_values['temperaturec'] = round(deis_values['temperaturec'] /5) * 5
+
+        #Anpassungen, um Daten zusammenzufügen
+        deis_soc.index = deis_soc.index + 1
+        deis_Calc_ImA.index = deis_Calc_ImA.index + 1
+
+        # Real und Imaginärteil berechnen
+        deis_phi = np.deg2rad(deis_values['phasezdeg'])  # Konvertiere Winkel in Radiant
+        deis_values.loc[:, 'calc_rezohm'] = deis_values['zohm'] * np.cos(deis_phi)
+        deis_values.loc[:, 'calc_imzohm'] = deis_values['zohm'] * np.sin(deis_phi)
+
+        deis_values.loc[:, 'soc'] = deis_soc
+        deis_values.loc[:, 'calc_ima'] = deis_Calc_ImA
+        deis_values.loc[:, 'calc_times'] = 0
+        deis_values.loc[:, 'datei'] = os.path.basename(data_name)
+        deis_values.loc[:, 'typ'] = "lup"
+
+        if save_data:
+            self.DB.insert_file(data_name, cycle, "Look-Up Table", Zelle, "LUP")
+            self.DB.df_in_DB(df=deis_values, table_name='eis')
+
     def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
         try:
             try:
