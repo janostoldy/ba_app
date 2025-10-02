@@ -38,10 +38,34 @@ def table_app():
                          )
         st.plotly_chart(fig)
 
-    fig = px.scatter_3d(data_df,
-                        x='soc',
-                        y='temperaturec',
-                        z='phasezdeg',
-                        hover_data=["datei"]
+def form_app():
+    st.title("Formierungs Data")
+    DB = Database("lup")
+    df = DB.get_deis()
+    st.write(df)
+    df['calc_soc'] = df['soc']/2500
+    plots = ['phasezdeg', 'calc_rezohm', 'calc_imzohm']
+
+    data_df = df[df["calc_ima"]==0]
+    data_df = data_df.sort_values(["soc","cycle"])
+    for plot in plots:
+        st.subheader(plot + ' 200 Hz')
+        fig = px.line(data_df,
+                        x='calc_soc',
+                        y=plot,
+                        color='cycle',
+                        )
+        st.plotly_chart(fig)
+
+    socs = [0.2,0.5,0.8]
+    data_df = df[df["calc_ima"]==0]
+    data_df = data_df[data_df["calc_soc"].isin(socs)]
+    data_df = data_df.sort_values(["soc","cycle"])
+    for plot in plots:
+        st.subheader(plot + ' 200 Hz')
+        fig = px.line(data_df,
+                        x='cycle',
+                        y=plot,
+                        color='calc_soc',
                         )
     st.plotly_chart(fig)
