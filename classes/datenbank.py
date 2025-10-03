@@ -277,6 +277,14 @@ class Database:
                  WHERE typ = 'lup' """
         return conn.query(sql)
 
+    def get_deis(self):
+        conn = st.connection("sql", type="sql")
+        sql = """SELECT eis.soc, eis.freqhz, eis.calc_ima, eis.calc_rezohm, eis.calc_imzohm, eis.zohm, eis.phasezdeg,
+                eis.temperaturec, files.cycle, files.zelle
+                FROM eis INNER JOIN files ON eis.datei = files.name
+                WHERE eis.typ = 'deis' """
+        return conn.query(sql)
+
     def get_imp_bio(self):
         conn = st.connection("sql", type="sql")
         sql = """SELECT * 
