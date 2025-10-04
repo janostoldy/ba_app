@@ -56,37 +56,70 @@ def form_app():
     data_df = data_df[data_df["calc_ima"]==1250]
     data_df = data_df.sort_values(["soc","cycle"])
     st.write(data_df)
-    for plot in plots:
-        st.subheader(plot + ' 200 Hz')
-        fig = px.line(data_df,
-                        x='calc_soc',
-                        y=plot,
-                        color='cycle',
-                        )
-        st.plotly_chart(fig)
-
-    socs = [0.2,0.5,0.8]
-    data_df = df[df["calc_ima"]==1250]
-    soc = st.segmented_control("SOC wählen", socs, default=socs[0])
-    data_df = data_df[data_df["calc_soc"]== soc]
-    data_df = data_df.sort_values(["zelle","soc","cycle"])
-    for plot in plots:
-        st.subheader(plot + ' 200 Hz')
-        fig = px.line(data_df,
-                        x='cycle',
-                        y=plot,
-                        color='zelle',
-                        )
-        st.plotly_chart(fig)
-        gruppen = [df for _, df in data_df.groupby(['soc','zelle'])]
-        result1 = pd.DataFrame([{
-            "soc": gruppe["soc"].iloc[0],
-            "zelle": gruppe["zelle"].iloc[0],
-            "robust_start_end_median": robust_start_end_median(gruppe[plot]),
-            "div": gruppe[plot].iloc[:-3].median() - gruppe[plot].iloc[0],
-            "mean": gruppe[plot].mean(),
-        } for gruppe in gruppen])
-        st.write(result1)
+    dia = st.segmented_control('Diagramme', ['SOC', 'Zyklen', 'Zyklen-mittel'])
+    if dia == 'SOC':
+        for plot in plots:
+            st.subheader(plot + ' 200 Hz')
+            fig = px.line(data_df,
+                            x='calc_soc',
+                            y=plot,
+                            color='cycle',
+                            )
+            st.plotly_chart(fig)
+    elif dia == 'Zyklen':
+        socs = [0.2,0.5,0.8]
+        data_df = df[df["calc_ima"]==1250]
+        soc = st.segmented_control("SOC wählen", socs, default=socs[0])
+        data_df = data_df[data_df["calc_soc"]== soc]
+        data_df = data_df.sort_values(["zelle","soc","cycle"])
+        for plot in plots:
+            st.subheader(plot + ' 200 Hz')
+            fig = px.line(data_df,
+                            x='cycle',
+                            y=plot,
+                            color='zelle',
+                            )
+            st.plotly_chart(fig)
+            gruppen = [df for _, df in data_df.groupby(['soc','zelle'])]
+            result1 = pd.DataFrame([{
+                "soc": gruppe["soc"].iloc[0],
+                "zelle": gruppe["zelle"].iloc[0],
+                "robust_start_end_median": robust_start_end_median(gruppe[plot]),
+                "div": gruppe[plot].iloc[:-3].median() - gruppe[plot].iloc[0],
+                "mean": gruppe[plot].mean(),
+            } for gruppe in gruppen])
+            st.write(result1)
+    elif dia == 'Zyklen-mittel':
+        data_df = df[df["calc_ima"] == 1250]
+        data_df = df[df["cycle"] <= 50]
+        socs = [0.2,0.5,0.8]
+        data_df = data_df.sort_values(["zelle", "soc", "cycle"])
+        data_df = data_df[data_df["calc_soc"].isin(socs)]
+        for plot in plots:
+            st.subheader(plot + ' 200 Hz')
+            fig = px.box(data_df,
+                         x="cycle",
+                         y=plot,
+                         color="soc",
+                         )
+            st.plotly_chart(fig)
+            gruppen = [df for _, df in data_df.groupby(['cycle','soc'])]
+            result1 = pd.DataFrame([{
+                "soc": gruppe["soc"].iloc[0],
+                "cycle": gruppe["cycle"].iloc[0],
+                "median": gruppe[plot].median(),
+                "std": gruppe[plot].std() if gruppe[plot].std() is not None else 0,
+                "max": gruppe[plot].max(),
+                "min": gruppe[plot].min(),
+            } for gruppe in gruppen])
+            result1 = result1.sort_values("cycle")
+            gruppen = [df for _, df in result1.groupby(['soc'])]
+            result2 = pd.DataFrame([{
+                "soc": gruppe["soc"].iloc[0],
+                "Abweichung": robust_start_end_median(gruppe["median"]),
+                "div": gruppe["median"].iloc[:-3].median() - gruppe["median"].iloc[0],
+            } for gruppe in gruppen])
+            st.write(result2)
 
 def fit_app():
     st.title("Fit Data")
