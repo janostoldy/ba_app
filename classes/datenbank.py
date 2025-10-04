@@ -231,7 +231,8 @@ class Database:
         conn = st.connection("sql", type="sql")
         sql = """SELECT eis.freqhz, eis.zohm, eis.phasezdeg, eis.calc_rezohm, eis.calc_imzohm, eis.soc, files.zelle, files.cycle
                  FROM eis INNER JOIN files ON eis.datei = files.name
-                 WHERE eis.typ='eis' AND eis.datei NOT LIKE '%Characterization%'"""
+                 WHERE eis.typ='eis' AND (eis.datei NOT LIKE '%Characterization%' OR files.zelle = 'JT_VTC_009' 
+                     OR files.zelle = 'JT_VTC_010' OR files.zelle = 'JT_VTC_006'OR files.zelle = 'JT_VTC_003')"""
         return conn.query(sql)
 
     def get_all_eis_points(self):

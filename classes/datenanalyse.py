@@ -243,7 +243,7 @@ class Analyse:
         deis_values.loc[:, 'typ'] = "lup"
 
         if save_data:
-            self.DB.insert_file(data_name, cycle, "Look-Up Table", Zelle, "LUP")
+            self.DB.insert_file(data_name, cycle, "Look-Up Table", Zelle, "deis")
             self.DB.df_in_DB(df=deis_values, table_name='eis')
 
     def analys_kapa_data(self,file_path, cycle, Zelle, save_data):
