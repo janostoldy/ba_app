@@ -26,7 +26,12 @@ def robust_start_end_median(df):
     return delta_rel
 
 def robust_start_end_abw(df, tol=0.05):
-    werte = df["wert"]
+    if "wert" in df.columns:
+        werte = df["wert"]
+    elif "median" in df.columns:
+        werte = df["median"]
+    else:
+        return -1
     med_end = werte.iloc[-3:].median()
     for z, wert in enumerate(werte.values):
         delta_abs = abs((wert - med_end)/ med_end)

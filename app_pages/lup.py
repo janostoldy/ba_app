@@ -2,7 +2,6 @@ import plotly.express as px
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sqlalchemy import case
 
 from classes.datenbank import Database
 import plotly.graph_objects as go
@@ -45,6 +44,12 @@ def table_app():
                         symbol="temperaturec_cat",
                          )
         st.plotly_chart(fig)
+    show_data = data_df[[
+        "freqhz", "zohm", "temperaturec", "phasezdeg",
+        "calc_rezohm", "calc_imzohm", "soc", "temperaturec_cat", "calc_soc"
+    ]].copy()
+    show_data.sort_values(["temperaturec_cat","calc_soc"])
+    st.write(show_data)
 
 def form_app():
     st.title("Formierungs Data")
@@ -129,6 +134,7 @@ def fit_app():
     data_df = df[df["calc_ima"]==1250]
     data_df = data_df[data_df["freqhz"].between(195, 205)]
     socs = [0.2, 0.5, 0.8]
+    data_df = data_df[data_df["calc_soc"].isin(socs)]
     plots = ['phasezdeg', 'calc_rezohm', 'calc_imzohm']
     pl = st.segmented_control('Daten wählen', plots, default=plots[0])
     con1 = st.container()
@@ -188,6 +194,12 @@ def fit_app():
                 soc8.write(f'Abweichung {wert} Grad')
 
     st.plotly_chart(fig)
-    st.write(data_df)
+    show_data = data_df[[
+        "freqhz", "zohm", "temperaturec", "phasezdeg",
+        "calc_rezohm", "calc_imzohm", "soc", "calc_soc"
+    ]].copy()
+    show_data['calc_soc'] = show_data['calc_soc'] *100
+    st.write(show_data)
     st.subheader('Fits')
+    fits['soc'] = fits['soc']*100
     st.write(fits)
