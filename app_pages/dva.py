@@ -6,6 +6,18 @@ from src.plotting_functions import colors, download_button
 from classes.datenbank import Database
 
 def dva_app():
+    with st.sidebar:
+        side = st.radio(
+            "Wähle eine Option",
+            ("Zellen", "Vergleich")
+        )
+    if side == "Zellen":
+        dva_zellen_app()
+    else:
+        dva_vergleich_app()
+
+
+def dva_zellen_app():
     st.title("DVA Analysis")
     DB = Database("DVA")
     if DB is None:
@@ -76,6 +88,71 @@ def dva_app():
         con1.subheader("Ausgewählte Daten:")
         con1.write(filt_data)
         con1.subheader("Plots:")
+
+def dva_vergleich_app():
+    st.title("DVA Vergleich")
+    DB = Database("DVA")
+    if DB is None:
+        st.error("Keine Verbindung zur Datenbank")
+        st.stop()
+    alldata = DB.get_all_dva()
+    con1 = st.container(border=True)
+    cycle, zelle = daten_filter(con1, alldata)
+    filt_data = alldata.iloc[0:0].copy()
+    col1, col2 = st.columns(2)
+    tab = col2.toggle("Tabellen anzeigen")
+    single = col1.toggle("Einzelne Plots")
+    if not cycle or not zelle:
+        st.warning("Keine Werte ausgewählt")
+    else:
+        con1 = st.container(border=False)
+        key = 0
+
+        data = pd.DataFrame()
+        points = pd.DataFrame()
+        con2 = st.container(border=False)
+        for z in zelle:
+            for c in cycle:
+                file = DB.get_file(c, z,"DVA")
+                if file.empty:
+                    continue
+                filt_data = pd.concat([filt_data, file])
+                single_data, single_points = DB.get_dva(file["name"].values[0])
+                single_data = pd.DataFrame(single_data)
+                single_points = pd.DataFrame(single_points)
+                single_points = pd.DataFrame(single_points["value"].values.reshape(1, -1), columns=single_points["point"].values)
+                single_data["Zyklus"] = c
+                single_points["Zyklus"] = c
+                data = pd.concat([data, single_data])
+                points = pd.concat([points, single_points])
+        fig = plot_vergleich_dva(data, cycle)
+        con2.plotly_chart(fig)
+        space1, col1, col2 = con2.columns([1, 20, 3])
+        col1.dataframe(points, hide_index=True)
+        if tab:
+            con2.dataframe(data, hide_index=True)
+        key += 1
+
+        con1.subheader("Ausgewählte Daten:")
+        con1.write(filt_data)
+        con1.subheader("Plots:")
+
+def plot_vergleich_dva(data,name):
+    # Plot erstellen
+    fig = px.line(data,
+                  x='qqomah_smoove',
+                  y='calc_dv_dq',
+                  title=f'Differential Voltage Analysis (DVA) von: {name}',
+                  labels={'dV/dQ': 'dV/dQ (V/Ah)'},
+                  color='datei',
+                  color_discrete_sequence=list(colors.values()),
+                  hover_data=[data.index],)
+    fig.update_layout(
+        yaxis_title='dV/dQ (V/Ah)',
+        xaxis_title='Kapazität (Ah)',
+        template='simple_white',
+    )
+    return fig
 
 def plot_multiple_dva(data,name):
     # Plot erstellen
@@ -148,3 +225,4 @@ def plot_dva_points(fig, calc_Data, calc_Points):
                 font=dict(color="#64a0c8", size=12)
             )
     return fig
+
